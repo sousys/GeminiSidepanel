@@ -1,7 +1,6 @@
 import { StateManager } from './state-handler.js';
 import { ViewRenderer } from './view-renderer.js';
 import { MessageTypes, DOMIds, Origins } from './constants.js';
-import { TooltipUI } from './tooltips.js';
 import { ThemeManager } from './theme-handler.js';
 import { Icons } from './icons.js';
 
@@ -19,7 +18,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     view.init();
     
-    TooltipUI.init();
     await ThemeManager.init();
     
     // Subscribe to store changes to trigger render

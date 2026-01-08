@@ -1,6 +1,5 @@
 import { CSSClasses, DOMIds, Timeouts } from './constants.js';
 import { Icons } from './icons.js';
-import { TooltipUI } from './tooltips.js';
 
 export class TabBar extends EventTarget {
     constructor() {
@@ -36,10 +35,8 @@ export class TabBar extends EventTarget {
                 tabEl.className = CSSClasses.TAB;
                 tabEl.setAttribute('data-id', tab.id);
                 
-                // Tooltips
-                tabEl.setAttribute('data-tooltip', tab.title); 
-                tabEl.addEventListener('mouseenter', TooltipUI.handleEnter);
-                tabEl.addEventListener('mouseleave', TooltipUI.handleLeave);
+                // Tooltips (Native)
+                tabEl.setAttribute('title', tab.title);
                 
                 // Event Listeners
                 tabEl.addEventListener('click', () => this.dispatchSwitchTab(tab.id));
@@ -69,7 +66,7 @@ export class TabBar extends EventTarget {
             const titleEl = tabEl.querySelector(`.${CSSClasses.TAB_TITLE}`);
             if (titleEl && titleEl.textContent !== tab.title) {
                 titleEl.textContent = tab.title;
-                tabEl.setAttribute('data-tooltip', tab.title);
+                tabEl.setAttribute('title', tab.title);
             }
 
             // Ensure DOM Order
