@@ -61,7 +61,7 @@ export class ContentManager {
                         }
                     } else {
                         // Old tab: Unload and remove from queue
-                        iframe.removeAttribute('src');
+                        iframe.remove();
                         this.loadingQueue.delete(tab.id);
                     }
                 }

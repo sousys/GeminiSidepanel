@@ -18,8 +18,6 @@ export class StateManager {
         const seenIds = new Set();
         let stateChanged = false;
         
-        // We can't easily do immutable map here without complex logic, 
-        // but this is one-time init fix-up.
         const newTabs = this.tabs.map(tab => {
             // Ensure lastActive exists
             if (!tab.lastActive) {
@@ -36,6 +34,16 @@ export class StateManager {
         });
         
         this.tabs = newTabs;
+
+        // Ensure activeTabId is valid
+        const activeTabExists = this.tabs.some(t => t.id === this.activeTabId);
+        if (this.tabs.length > 0 && !activeTabExists) {
+            this.activeTabId = this.tabs[0].id;
+            stateChanged = true;
+        } else if (this.tabs.length === 0 && this.activeTabId) {
+            this.activeTabId = null;
+            stateChanged = true;
+        }
 
         if (stateChanged) {
             this.save();
@@ -103,7 +111,6 @@ export class StateManager {
         if (id === this.activeTabId) {
             if (this.tabs.length > 0) {
                 // If we removed the active tab, select the next available one (or previous)
-                // Original logic was index - 1.
                 const newIndex = Math.max(0, index - 1);
                 // Be careful with bounds if index was 0
                 const safeIndex = Math.min(newIndex, this.tabs.length - 1);

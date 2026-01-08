@@ -5,93 +5,104 @@ export class TabBar extends EventTarget {
     constructor() {
         super();
         this.tabBar = null;
+        this.addTabBtn = null;
         this.renderedTabs = new Map();
+        this.exitingTabs = new Set();
     }
 
     init(element) {
         this.tabBar = element;
+        this.addTabBtn = document.getElementById(DOMIds.ADD_TAB_BTN);
     }
 
     render(tabs, activeTabId) {
         const currentIds = new Set(tabs.map(t => t.id));
 
-        // 1. Remove deleted tabs
+        // 1. Handle Removed Tabs (Animate out)
         for (const [id, el] of this.renderedTabs) {
             if (!currentIds.has(id)) {
-                el.remove();
+                if (!this.exitingTabs.has(id)) {
+                    this.animateAndRemove(id, el);
+                }
                 this.renderedTabs.delete(id);
             }
         }
 
-        // 2. Create or Update tabs
-        let previousSibling = document.getElementById(DOMIds.ADD_TAB_BTN);
+        // 2. Render Current Tabs
+        let previousSibling = this.addTabBtn;
         
         tabs.forEach((tab) => {
             let tabEl = this.renderedTabs.get(tab.id);
 
             if (!tabEl) {
-                // Create new
-                tabEl = document.createElement('div');
-                tabEl.className = CSSClasses.TAB;
-                tabEl.setAttribute('data-id', tab.id);
-                
-                // Tooltips (Native)
-                tabEl.setAttribute('title', tab.title);
-                
-                // Event Listeners
-                tabEl.addEventListener('click', () => this.dispatchSwitchTab(tab.id));
-                
-                const titleEl = document.createElement('span');
-                titleEl.className = CSSClasses.TAB_TITLE;
-                titleEl.textContent = tab.title;
-                tabEl.appendChild(titleEl);
-
-                const closeBtn = document.createElement('span');
-                closeBtn.className = CSSClasses.CLOSE_TAB;
-                closeBtn.textContent = Icons.CLOSE;
-                closeBtn.addEventListener('click', (e) => this.handleCloseTab(e, tab.id));
-                tabEl.appendChild(closeBtn);
-
+                tabEl = this.createTab(tab);
                 this.renderedTabs.set(tab.id, tabEl);
             }
 
-            // Update Active State
-            if (tab.id === activeTabId) {
-                tabEl.classList.add(CSSClasses.ACTIVE);
-            } else {
-                tabEl.classList.remove(CSSClasses.ACTIVE);
-            }
-
-            // Update Title
-            const titleEl = tabEl.querySelector(`.${CSSClasses.TAB_TITLE}`);
-            if (titleEl && titleEl.textContent !== tab.title) {
-                titleEl.textContent = tab.title;
-                tabEl.setAttribute('title', tab.title);
-            }
+            this.updateTab(tabEl, tab, activeTabId);
 
             // Ensure DOM Order
-            if (previousSibling.nextSibling !== tabEl) {
-                previousSibling.after(tabEl);
+            if (previousSibling) {
+                if (previousSibling.nextSibling !== tabEl) {
+                    previousSibling.after(tabEl);
+                }
+                previousSibling = tabEl;
+            } else {
+                // Fallback if add button is missing
+                if (this.tabBar.lastChild !== tabEl) {
+                    this.tabBar.appendChild(tabEl);
+                }
+                previousSibling = tabEl;
             }
-            previousSibling = tabEl;
         });
     }
 
-    handleCloseTab(e, id) {
-        e.stopPropagation(); 
-        const tabEl = this.renderedTabs.get(id);
+    createTab(tab) {
+        const tabEl = document.createElement('div');
+        tabEl.className = CSSClasses.TAB;
+        tabEl.setAttribute('data-id', tab.id);
+        tabEl.setAttribute('title', tab.title);
         
-        if (tabEl) {
-            tabEl.classList.add(CSSClasses.SLIDE_OUT);
-            setTimeout(() => {
-                this.dispatchEvent(new CustomEvent('tab-close', { detail: { id } }));
-            }, Timeouts.ANIMATION_DURATION);
+        tabEl.addEventListener('click', () => this.dispatchEvent(new CustomEvent('tab-switch', { detail: { id: tab.id } })));
+        
+        const titleEl = document.createElement('span');
+        titleEl.className = CSSClasses.TAB_TITLE;
+        titleEl.textContent = tab.title;
+        tabEl.appendChild(titleEl);
+
+        const closeBtn = document.createElement('span');
+        closeBtn.className = CSSClasses.CLOSE_TAB;
+        closeBtn.textContent = Icons.CLOSE;
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.dispatchEvent(new CustomEvent('tab-close', { detail: { id: tab.id } }));
+        });
+        tabEl.appendChild(closeBtn);
+
+        return tabEl;
+    }
+
+    updateTab(el, tab, activeTabId) {
+        if (tab.id === activeTabId) {
+            el.classList.add(CSSClasses.ACTIVE);
         } else {
-            this.dispatchEvent(new CustomEvent('tab-close', { detail: { id } }));
+            el.classList.remove(CSSClasses.ACTIVE);
+        }
+
+        const titleEl = el.querySelector(`.${CSSClasses.TAB_TITLE}`);
+        if (titleEl && titleEl.textContent !== tab.title) {
+            titleEl.textContent = tab.title;
+            el.setAttribute('title', tab.title);
         }
     }
 
-    dispatchSwitchTab(id) {
-        this.dispatchEvent(new CustomEvent('tab-switch', { detail: { id } }));
+    animateAndRemove(id, el) {
+        this.exitingTabs.add(id);
+        el.classList.add(CSSClasses.SLIDE_OUT);
+        
+        setTimeout(() => {
+            el.remove();
+            this.exitingTabs.delete(id);
+        }, Timeouts.ANIMATION_DURATION);
     }
 }

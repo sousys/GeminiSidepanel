@@ -6,12 +6,6 @@ import { Icons } from './icons.js';
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
-    // Globals (TooltipUI, ThemeManager) are initialized by their own scripts or here if needed.
-    // tooltips.js has init called by main previously?
-    // Original main.js:
-    // ViewRenderer.init();
-    // TooltipUI.init();
-    // await ThemeManager.init();
     
     const state = new StateManager();
     const view = new ViewRenderer();
@@ -60,6 +54,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const activeTab = state.getActiveTab();
             if (activeTab && activeTab.url) {
                 chrome.tabs.create({ url: activeTab.url });
+                state.removeTab(activeTab.id);
+                if (state.getTabs().length === 0) {
+                    state.addTab();
+                }
             }
         });
     }

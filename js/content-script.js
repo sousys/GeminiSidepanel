@@ -88,7 +88,7 @@
     patchHistory('replaceState');
     window.addEventListener('popstate', reportState);
 
-    // 4. Message Listener
+    // 5. Message Listener
     window.addEventListener('message', (event) => {
         if (event.data && event.data.type === 'CHECK_STATE') {
             // Force report even if no change detected locally (reset lastUrl to force send)
