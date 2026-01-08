@@ -72,7 +72,13 @@ export class ContentManager {
     }
 
     processLoadingQueue() {
+        // This queue exists to lazy-load background tabs to save memory.
+        // We process one tab every few seconds to avoid overwhelming the browser.
+
         if (this.loadingInterval) return; // Already running
+        
+        // If queue is empty, no need to start interval
+        if (this.loadingQueue.size === 0) return;
 
         this.loadingInterval = setInterval(() => {
             if (this.loadingQueue.size === 0) {

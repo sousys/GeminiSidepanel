@@ -32,14 +32,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Initialize Store (loads state)
-    await state.init();
-
-    // Ensure at least one tab exists
-    if (state.getTabs().length === 0) {
-        state.addTab();
-    } 
-
     const addTabBtn = document.getElementById(DOMIds.ADD_TAB_BTN);
     if (addTabBtn) {
         addTabBtn.addEventListener('click', () => {
@@ -85,4 +77,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
     });
+
+    // Initialize Store (loads state)
+    // Moved to the end to ensure listeners are ready before data loads
+    await state.init();
+
+    // Ensure at least one tab exists
+    if (state.getTabs().length === 0) {
+        state.addTab();
+    } 
 });
