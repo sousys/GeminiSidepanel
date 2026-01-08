@@ -6,9 +6,10 @@
 
 -   **Side Panel Integration**: Access Google Gemini instantly alongside your browsing.
 -   **Multi-Tab Support**: Create and manage multiple Gemini tabs within the side panel itself.
--   **State Persistence**: Your open tabs and current URLs are saved automatically. If you close the browser, your workspace is restored next time you open the panel.
+-   **State Persistence**: Your open tabs and current URLs are saved automatically using `chrome.storage`. If you close the browser, your workspace is restored next time you open the panel.
+-   **Smart Resource Management**: Background tabs are lazy-loaded and inactive tabs are unloaded to save system resources.
 -   **Theme Support**: Automatically syncs with your system or browser theme preferences (Dark/Light/System).
--   **Keyboard Shortcut**: fast access via `Alt+G` (default).
+-   **Keyboard Shortcut**: Fast access via `Alt+G` (default).
 -   **Seamless Navigation**: Open any specific Gemini chat in a full browser tab with a single click.
 
 ## Installation
@@ -31,32 +32,72 @@ Since this extension is not yet in the Chrome Web Store, you can install it in D
     -   Switch between tabs to maintain different conversation contexts (e.g., "Coding", "Writing", "General").
 3.  **Options**: Right-click the extension icon and select **Options** to configure theme preferences (System, Light, or Dark).
 
+## Technical Architecture
+
+This extension uses a **Model-View-Controller (MVC)** like architecture to manage the side panel state and UI.
+
+### Core Components
+
+1.  **Service Worker (`service-worker.js`)**:
+    -   Handles the extension's lifecycle and side panel behavior.
+    -   **Critical**: Uses the `declarativeNetRequest` API to strip `X-Frame-Options` and `Content-Security-Policy` headers from `gemini.google.com` responses. This allows the Gemini web application to be embedded within an `iframe` in the side panel.
+
+2.  **State Management (`js/state-handler.js`)**:
+    -   Acts as the **Model**.
+    -   Manages the single source of truth for the application state (list of open tabs, active tab ID).
+    -   Persists state to `chrome.storage.local`.
+    -   Implements a subscription pattern to notify other components of state changes.
+
+3.  **Main Controller (`js/main.js`)**:
+    -   Acts as the **Controller**.
+    -   Initializes the application.
+    -   Listens for UI events (tab clicks, new tab creation) and delegates them to the `StateManager`.
+    -   Receives messages from the `content-script.js` to update tab titles and URLs.
+
+4.  **View Rendering (`js/view-renderer.js`, `js/tab-bar.js`, `js/content-manager.js`)**:
+    -   Acts as the **View**.
+    -   `ViewRenderer` orchestrates the UI updates.
+    -   `TabBar` manages the tab strip UI.
+    -   `ContentManager` handles the `iframe` elements. It implements **performance optimizations** by:
+        -   Lazy-loading iframes only when they are activated.
+        -   Unloading iframes that haven't been accessed recently to free up memory.
+
+5.  **Content Script (`js/content-script.js`)**:
+    -   Injected into the `gemini.google.com` iframe.
+    -   Patches the browser's History API (`pushState`, `replaceState`) to detect client-side navigation within the Gemini SPA.
+    -   Communicates URL and Title changes back to the parent extension via `window.parent.postMessage`.
+
 ## Permissions
 
-This extension requires the following permissions to function:
+This extension requires the following permissions:
 
 -   `sidePanel`: To render the interface in the browser's side panel.
 -   `storage`: To save your open tabs and settings locally.
--   `declarativeNetRequest`: To handle specific network requests required for embedding Gemini.
+-   `declarativeNetRequest`: To modify response headers for iframe compatibility.
 -   `host_permissions` (`https://gemini.google.com/*`): To embed the Gemini web interface and synchronize navigation state.
 
-## Development
+## Project Structure
 
-### Project Structure
-
--   `manifest.json`: Extension configuration (Manifest V3).
--   `html/`: HTML templates for the side panel and options page.
--   `css/`: Stylesheets for the UI.
--   `js/`: Core logic.
-    -   `main.js`: Application entry point.
-    -   `state-handler.js`: Manages tab state and storage.
-    -   `view-renderer.js`: Handles DOM updates and UI rendering.
-    -   `service-worker.js`: Background script.
-    -   `content-script.js`: Runs within the Gemini iframe to detect navigation and title changes.
-
-### building
-
-No build step is required (vanilla JS/CSS). Changes to the code can be tested by clicking the "Refresh" icon on the extension card in `chrome://extensions/`.
+```text
+├── css/                # Stylesheets
+├── html/               # HTML templates (sidepanel, options)
+├── images/             # Icons and assets
+├── js/
+│   ├── constants.js    # Global constants
+│   ├── content-manager.js # Iframe lifecycle & optimization
+│   ├── content-script.js  # Injected script for Gemini integration
+│   ├── icons.js        # SVG icon definitions
+│   ├── main.js         # Entry point & controller
+│   ├── options.js      # Options page logic
+│   ├── service-worker.js # Background process & network handling
+│   ├── state-handler.js  # State management & storage
+│   ├── tab-bar.js      # Tab strip UI logic
+│   ├── theme-handler.js # Theme synchronization
+│   ├── utils.js        # Helper functions
+│   └── view-renderer.js   # UI orchestration
+├── manifest.json       # Extension configuration (Manifest V3)
+└── README.md           # This file
+```
 
 ## License
 
