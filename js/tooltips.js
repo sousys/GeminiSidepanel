@@ -1,4 +1,4 @@
-const TooltipUI = {
+export const TooltipUI = {
     timer: null,
     DELAY: 200, // Half of typical ~1s delay
 
