@@ -1,6 +1,6 @@
 import { CSSClasses, Timeouts, Permissions, MessageTypes } from './constants.js';
 
-export class ContentManager {
+export class IframeHandler {
     constructor() {
         this.contentArea = null;
         this.loadingQueue = new Set();

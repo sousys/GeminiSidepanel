@@ -54,11 +54,11 @@ This extension uses a **Model-View-Controller (MVC)** like architecture to manag
     -   Listens for UI events (tab clicks, new tab creation) and delegates them to the `StateManager`.
     -   Receives messages from the `content-script.js` to update tab titles and URLs.
 
-4.  **View Rendering (`js/view-renderer.js`, `js/tab-bar.js`, `js/content-manager.js`)**:
+4.  **View Rendering (`js/view-renderer.js`, `js/tab-bar.js`, `js/iframe-handler.js`)**:
     -   Acts as the **View**.
     -   `ViewRenderer` orchestrates the UI updates.
     -   `TabBar` manages the tab strip UI.
-    -   `ContentManager` handles the `iframe` elements. It implements **performance optimizations** by:
+    -   `IframeHandler` handles the `iframe` elements. It implements **performance optimizations** by:
         -   Lazy-loading iframes only when they are activated.
         -   Unloading iframes that haven't been accessed recently to free up memory.
 
@@ -84,7 +84,7 @@ This extension requires the following permissions:
 ├── images/             # Icons and assets
 ├── js/
 │   ├── constants.js    # Global constants
-│   ├── content-manager.js # Iframe lifecycle & optimization
+│   ├── iframe-handler.js  # Iframe lifecycle & optimization
 │   ├── content-script.js  # Injected script for Gemini integration
 │   ├── icons.js        # SVG icon definitions
 │   ├── main.js         # Entry point & controller
