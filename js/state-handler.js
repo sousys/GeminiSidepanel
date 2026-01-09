@@ -10,6 +10,16 @@ export class StateManager {
     }
 
     async init() {
+        const prefData = await chrome.storage.sync.get([StorageKeys.PERSISTENCE_PREF]);
+        const persistenceEnabled = prefData[StorageKeys.PERSISTENCE_PREF] !== false;
+
+        if (!persistenceEnabled) {
+            this.tabs = [];
+            this.activeTabId = null;
+            this.notify();
+            return;
+        }
+
         const data = await chrome.storage.local.get([StorageKeys.TABS, StorageKeys.ACTIVE_TAB]);
         this.tabs = data[StorageKeys.TABS] || [];
         this.activeTabId = data[StorageKeys.ACTIVE_TAB] || null;
@@ -64,6 +74,9 @@ export class StateManager {
         if (this.saveDebounceTimer) clearTimeout(this.saveDebounceTimer);
         
         this.saveDebounceTimer = setTimeout(async () => {
+            const prefData = await chrome.storage.sync.get([StorageKeys.PERSISTENCE_PREF]);
+            if (prefData[StorageKeys.PERSISTENCE_PREF] === false) return;
+
             await chrome.storage.local.set({
                 [StorageKeys.TABS]: this.tabs,
                 [StorageKeys.ACTIVE_TAB]: this.activeTabId
