@@ -39,10 +39,9 @@
    },
    "manifest_version": 3,
    "name": "Gemini Side Panel Extended",
-   "options_page": "html/settings.html",
    "permissions": [ "declarativeNetRequest", "sidePanel", "storage" ],
    "side_panel": {
       "default_path": "html/sidepanel.html"
    },
-   "version": "0.2.2"
+   "version": "0.3.0"
 }
