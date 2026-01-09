@@ -56,6 +56,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    const settingsBtn = document.getElementById(DOMIds.SETTINGS_BTN);
+    if (settingsBtn) {
+        settingsBtn.innerHTML = Icons.SETTINGS;
+        settingsBtn.addEventListener('click', () => {
+            const settingsUrl = chrome.runtime.getURL('html/settings.html');
+            const existingTab = state.getTabs().find(t => t.url === settingsUrl);
+            
+            if (existingTab) {
+                if (state.getActiveTabId() === existingTab.id) {
+                    // Toggle off: Close if already active
+                    state.removeTab(existingTab.id);
+                    // Ensure at least one tab exists (handled by tab-close listener usually, but removeTab triggers it)
+                    if (state.getTabs().length === 0) {
+                        state.addTab();
+                    }
+                } else {
+                    // Switch to existing
+                    state.setActiveTab(existingTab.id);
+                }
+            } else {
+                state.addTab('Settings', settingsUrl);
+            }
+        });
+    }
+
     const coffeeBtn = document.getElementById('coffeeBtn');
     if (coffeeBtn) {
         coffeeBtn.innerHTML = Icons.COFFEE;

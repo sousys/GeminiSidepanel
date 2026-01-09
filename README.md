@@ -6,10 +6,10 @@
 
 -   **Side Panel Integration**: Access Google Gemini instantly alongside your browsing.
 -   **Multi-Tab Support**: Create and manage multiple Gemini tabs within the side panel itself.
--   **State Persistence (Optional)**: Your open tabs and current URLs are saved automatically by default. You can disable this in options to always start with a fresh session.
+-   **State Persistence (Optional)**: Your open tabs and current URLs are saved automatically by default. You can disable this in settings to always start with a fresh session.
 -   **Smart Resource Management**: Background tabs are lazy-loaded and inactive tabs are unloaded to save system resources.
 -   **Theme Support**: Automatically syncs with your system or browser theme preferences (Dark/Light/System).
--   **Customizable Zoom**: Adjust the content size of the side panel from 50% to 120% via the Options page.
+-   **Customizable Zoom**: Adjust the content size of the side panel from 50% to 120% via the Settings page.
 -   **Keyboard Shortcut**: Fast access via `Alt+G` (default).
 -   **Seamless Navigation**: Open any specific Gemini chat in a full browser tab with a single click.
 
@@ -31,7 +31,7 @@ Since this extension is not yet in the Chrome Web Store, you can install it in D
     -   Click **+** to add a new fresh Gemini session.
     -   Click the **x** on a tab to close it.
     -   Switch between tabs to maintain different conversation contexts (e.g., "Coding", "Writing", "General").
-3.  **Options**: Right-click the extension icon and select **Options** to:
+3.  **Settings**: Click the **Settings (gear icon)** in the bottom-left toolbar of the side panel (or right-click the extension icon and select "Options") to:
     -   Configure theme preferences (System, Light, or Dark).
     -   Adjust the content zoom level (50% - 120%) to better fit your screen.
     -   **Behavior**: Enable or disable tab persistence. Disabling it ensures a fresh start every time you open the panel.
@@ -88,7 +88,7 @@ This extension requires the following permissions:
 
 ```text
 ├── css/                # Stylesheets
-├── html/               # HTML templates (sidepanel, options)
+├── html/               # HTML templates (sidepanel, settings)
 ├── images/             # Icons and assets
 ├── js/
 │   ├── constants.js    # Global constants
@@ -96,7 +96,7 @@ This extension requires the following permissions:
 │   ├── content-script.js  # Injected script for Gemini integration
 │   ├── icons.js        # SVG icon definitions
 │   ├── main.js         # Entry point & controller
-│   ├── options.js      # Options page logic
+│   ├── settings.js      # Settings page logic
 │   ├── service-worker.js # Background process & network handling
 │   ├── size-handler.js   # Content zoom logic
 │   ├── state-handler.js  # State management & storage

@@ -22,6 +22,10 @@ export class StateManager {
 
         const data = await chrome.storage.local.get([StorageKeys.TABS, StorageKeys.ACTIVE_TAB]);
         this.tabs = data[StorageKeys.TABS] || [];
+        
+        // Filter out extension pages (like Settings) from previous sessions
+        this.tabs = this.tabs.filter(t => !t.url.startsWith('chrome-extension://'));
+
         this.activeTabId = data[StorageKeys.ACTIVE_TAB] || null;
 
         // Deduplicate IDs
@@ -77,9 +81,13 @@ export class StateManager {
             const prefData = await chrome.storage.sync.get([StorageKeys.PERSISTENCE_PREF]);
             if (prefData[StorageKeys.PERSISTENCE_PREF] === false) return;
 
+            // Filter out extension pages (like Settings) from persistence
+            const tabsToSave = this.tabs.filter(t => !t.url.startsWith('chrome-extension://'));
+            const activeTabIdToSave = this.activeTabId; // We can keep the ID, but if the tab is gone, init handles it.
+
             await chrome.storage.local.set({
-                [StorageKeys.TABS]: this.tabs,
-                [StorageKeys.ACTIVE_TAB]: this.activeTabId
+                [StorageKeys.TABS]: tabsToSave,
+                [StorageKeys.ACTIVE_TAB]: activeTabIdToSave
             });
         }, 500); // 500ms debounce
     }
@@ -96,12 +104,12 @@ export class StateManager {
         return this.tabs.find(t => t.id === this.activeTabId);
     }
 
-    addTab() {
+    addTab(title, url) {
         const newId = generateId();
         const newTab = {
             id: newId,
-            title: Defaults.NEW_TAB_TITLE,
-            url: Defaults.NEW_TAB_URL,
+            title: title || Defaults.NEW_TAB_TITLE,
+            url: url || Defaults.NEW_TAB_URL,
             lastActive: Date.now()
         };
         
