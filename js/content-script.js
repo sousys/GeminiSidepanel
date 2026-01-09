@@ -3,7 +3,7 @@
     const initialTabId = window.name;
     
     let lastUrl = location.href;
-    let lastTitle = document.title;
+    let lastTitle = null;
 
     // Inject CSS to ensure the conversation title/header remains visible
     // This addresses issues where the header might be hidden in narrow views or during loading
@@ -20,8 +20,7 @@
     const reportState = () => {
         const currentUrl = location.href;
         
-        // Fallback to document title (cleaned)
-        let currentTitle = document.title.replace(/ - Gemini$/, '').trim();
+        let currentTitle = null; 
         let titleFound = false;
 
         // Check if we are on the "New Chat" page based on URL
@@ -48,58 +47,33 @@
             }
         }
 
-        // Filter out generic loading titles if we didn't find a specific one
-        if (!isNewChat && !titleFound) {
-            if (currentTitle === 'Gemini' || currentTitle === 'Google Gemini') {
-                currentTitle = null;
-            }
-        }
-
-        if (currentUrl !== lastUrl || currentTitle !== lastTitle) {
+        if (currentUrl !== lastUrl || (currentTitle !== null && currentTitle !== lastTitle)) {
             window.parent.postMessage({ 
                 type: 'GEMINI_STATE_CHANGED', 
                 url: currentUrl,
                 title: currentTitle,
                 tabId: initialTabId
             }, '*');
+            
             lastUrl = currentUrl;
-            lastTitle = currentTitle;
+            if (currentTitle !== null) {
+                lastTitle = currentTitle;
+            }
         }
     };
 
     // 1. Initial report
     reportState();
 
-    // 2. Observer for DOM changes (Title header, URL updates via framework, etc.)
-    const startObserver = () => {
-        let debounceTimer;
-        const domObserver = new MutationObserver(() => {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(reportState, 300);
-        });
-        
-        const targetNode = document.body || document.documentElement;
-
-        if (targetNode && targetNode.nodeType === Node.ELEMENT_NODE) {
-            try {
-                domObserver.observe(targetNode, { childList: true, subtree: true, characterData: true });
-            } catch (e) {
-                console.error("Gemini Sidepanel: Failed to start observer", e);
-            }
-        } else {
-            // Retry if document is not ready
-            setTimeout(startObserver, 500);
-        }
-    };
-
-    if (document.body) {
-        startObserver();
-    } else {
-        document.addEventListener('DOMContentLoaded', () => {
+    // 2. Polling fallback (Replaces MutationObserver to save CPU on streaming updates)
+    // Runs every 1s to catch Title updates that happen after navigation/rendering
+    setInterval(() => {
+        try {
             reportState();
-            startObserver();
-        });
-    }
+        } catch (e) {
+            console.error("Gemini Sidepanel: Polling failed", e);
+        }
+    }, 1000);
 
     // 3. Intercept History API for URL changes (SPAs)
     const patchHistory = (method) => {
@@ -114,7 +88,7 @@
     patchHistory('replaceState');
     window.addEventListener('popstate', reportState);
 
-    // 4. Message Listener
+    // 5. Message Listener
     window.addEventListener('message', (event) => {
         if (event.data && event.data.type === 'CHECK_STATE') {
             // Force report even if no change detected locally (reset lastUrl to force send)
@@ -122,7 +96,4 @@
             reportState();
         }
     });
-
-    // 5. Polling Fallback (Safety net for missed events)
-    setInterval(reportState, 1000);
 })();

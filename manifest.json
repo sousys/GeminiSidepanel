@@ -27,7 +27,7 @@
       }
    ],
    "content_security_policy": {
-      "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline'; frame-src 'self' https://gemini.google.com/; connect-src 'self' https://gemini.google.com/;"
+      "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline'; frame-src 'self' https://gemini.google.com/ https://accounts.google.com/ https://consent.google.com/; connect-src 'self' https://gemini.google.com/;"
    },
    "description": "Persistent Gemini Chats in Side Panel",
    "host_permissions": [ "https://gemini.google.com/*", "https://*.google.com/*", "*://*.googleusercontent.com/*" ],
@@ -44,5 +44,5 @@
    "side_panel": {
       "default_path": "html/sidepanel.html"
    },
-   "version": "0.1.0"
+   "version": "0.2.0"
 }

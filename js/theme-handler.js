@@ -1,4 +1,4 @@
-const ThemeManager = {
+export const ThemeManager = {
     STORAGE_KEY: 'theme_preference',
     currentMode: 'system', // 'system', 'light', 'dark'
     systemMediaQuery: window.matchMedia('(prefers-color-scheme: dark)'),
