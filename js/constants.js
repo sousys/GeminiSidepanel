@@ -22,7 +22,8 @@ export const DOMIds = {
     TAB_BAR: 'tabBar',
     CONTENT_AREA: 'content-area',
     OPEN_BROWSER_BTN: 'openBrowserBtn',
-    ADD_TAB_BTN: 'addTabBtn'
+    ADD_TAB_BTN: 'addTabBtn',
+    SETTINGS_BTN: 'settingsBtn'
 };
 
 export const Origins = {

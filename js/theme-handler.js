@@ -10,7 +10,7 @@ export const ThemeManager = {
         
         this.apply();
 
-        // Listen for storage changes (e.g. changed in Options page)
+        // Listen for storage changes (e.g. changed in Settings page)
         chrome.storage.onChanged.addListener((changes, namespace) => {
             if (namespace === 'sync' && changes[this.STORAGE_KEY]) {
                 this.currentMode = changes[this.STORAGE_KEY].newValue;
@@ -35,8 +35,10 @@ export const ThemeManager = {
 
         if (effectiveTheme === 'light') {
             document.body.classList.add('light-theme');
+            document.body.classList.remove('dark-theme');
         } else {
             document.body.classList.remove('light-theme');
+            document.body.classList.add('dark-theme');
         }
     },
 

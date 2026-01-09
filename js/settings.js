@@ -1,4 +1,8 @@
-document.addEventListener('DOMContentLoaded', function() {
+import { ThemeManager } from './theme-handler.js';
+
+document.addEventListener('DOMContentLoaded', async function() {
+    await ThemeManager.init();
+
     const statusElement = document.getElementById('status');
     const themeRadios = document.querySelectorAll('input[name="theme"]');
     const zoomSlider = document.getElementById('zoomSlider');
