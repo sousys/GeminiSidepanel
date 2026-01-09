@@ -1,6 +1,7 @@
 export const StorageKeys = {
     TABS: 'gemini_tabs',
-    ACTIVE_TAB: 'gemini_active_tab'
+    ACTIVE_TAB: 'gemini_active_tab',
+    PERSISTENCE_PREF: 'persistence_enabled'
 };
 
 export const MessageTypes = {

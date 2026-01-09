@@ -3,9 +3,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const themeRadios = document.querySelectorAll('input[name="theme"]');
     const zoomSlider = document.getElementById('zoomSlider');
     const zoomValue = document.getElementById('zoomValue');
+    const persistenceCheckbox = document.getElementById('persistenceCheckbox');
 
     // --- Theme Logic ---
-    chrome.storage.sync.get(['theme_preference', 'panel_zoom'], function(data) {
+    chrome.storage.sync.get(['theme_preference', 'panel_zoom', 'persistence_enabled'], function(data) {
         const currentTheme = data.theme_preference || 'system';
         for (const radio of themeRadios) {
             if (radio.value === currentTheme) {
@@ -21,6 +22,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if (zoomValue) {
             zoomValue.textContent = currentZoom + '%';
+        }
+
+        // --- Persistence Logic ---
+        if (persistenceCheckbox) {
+            // Default to true if undefined
+            persistenceCheckbox.checked = data.persistence_enabled !== false;
         }
     });
 
@@ -50,6 +57,18 @@ document.addEventListener('DOMContentLoaded', function() {
             chrome.storage.sync.set({ 'panel_zoom': zoom }, function() {
                 if (statusElement) {
                     statusElement.textContent = 'Zoom preference saved!';
+                    setTimeout(() => { statusElement.textContent = ''; }, 2000);
+                }
+            });
+        });
+    }
+
+    if (persistenceCheckbox) {
+        persistenceCheckbox.addEventListener('change', function() {
+            const enabled = this.checked;
+            chrome.storage.sync.set({ 'persistence_enabled': enabled }, function() {
+                if (statusElement) {
+                    statusElement.textContent = 'Persistence setting saved!';
                     setTimeout(() => { statusElement.textContent = ''; }, 2000);
                 }
             });

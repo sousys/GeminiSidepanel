@@ -6,7 +6,7 @@
 
 -   **Side Panel Integration**: Access Google Gemini instantly alongside your browsing.
 -   **Multi-Tab Support**: Create and manage multiple Gemini tabs within the side panel itself.
--   **State Persistence**: Your open tabs and current URLs are saved automatically using `chrome.storage`. If you close the browser, your workspace is restored next time you open the panel.
+-   **State Persistence (Optional)**: Your open tabs and current URLs are saved automatically by default. You can disable this in options to always start with a fresh session.
 -   **Smart Resource Management**: Background tabs are lazy-loaded and inactive tabs are unloaded to save system resources.
 -   **Theme Support**: Automatically syncs with your system or browser theme preferences (Dark/Light/System).
 -   **Customizable Zoom**: Adjust the content size of the side panel from 50% to 120% via the Options page.
@@ -34,6 +34,7 @@ Since this extension is not yet in the Chrome Web Store, you can install it in D
 3.  **Options**: Right-click the extension icon and select **Options** to:
     -   Configure theme preferences (System, Light, or Dark).
     -   Adjust the content zoom level (50% - 120%) to better fit your screen.
+    -   **Behavior**: Enable or disable tab persistence. Disabling it ensures a fresh start every time you open the panel.
 
 ## Technical Architecture
 
@@ -48,7 +49,7 @@ This extension uses a **Model-View-Controller (MVC)** like architecture to manag
 2.  **State Management (`js/state-handler.js`)**:
     -   Acts as the **Model**.
     -   Manages the single source of truth for the application state (list of open tabs, active tab ID).
-    -   Persists state to `chrome.storage.local`.
+    -   Persists state to `chrome.storage.local` (respecting the persistence preference).
     -   Implements a subscription pattern to notify other components of state changes.
 
 3.  **Main Controller (`js/main.js`)**:
