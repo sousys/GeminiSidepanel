@@ -2,6 +2,7 @@ import { StateManager } from './state-handler.js';
 import { ViewRenderer } from './view-renderer.js';
 import { MessageTypes, DOMIds, Origins } from './constants.js';
 import { ThemeManager } from './theme-handler.js';
+import { SizeHandler } from './size-handler.js';
 import { Icons } from './icons.js';
 
 // Initialize
@@ -13,6 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     view.init();
     
     await ThemeManager.init();
+    SizeHandler.init();
     
     // Subscribe to store changes to trigger render
     state.subscribe((tabs, activeTabId) => {
@@ -79,7 +81,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // Initialize Store (loads state)
-    // Moved to the end to ensure listeners are ready before data loads
     await state.init();
 
     // Ensure at least one tab exists
