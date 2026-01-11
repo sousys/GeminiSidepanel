@@ -10,7 +10,8 @@
 -   **State Persistence (Optional)**: Your open tabs and current URLs are saved automatically by default. You can disable this in settings to always start with a fresh session.
 -   **Smart Resource Management**: Background tabs are lazy-loaded and inactive tabs are unloaded to save system resources.
 -   **Theme Support**: Automatically syncs with your system or browser theme preferences (Dark/Light/System).
--   **Customizable Zoom**: Adjust the content size of the side panel from 50% to 120% via the Settings page.
+-   **Refined User Interface**: Polished tab bar with uniform icon sizing and spacing for a cleaner look.
+-   **Customizable Zoom**: Adjust the content size of the side panel from 50% to 120% via the Settings drawer.
 -   **Keyboard Shortcut**: Fast access via `Alt+G` (default).
 -   **Seamless Navigation**: Open any specific Gemini chat in a full browser tab with a single click.
 
@@ -36,7 +37,7 @@ Since this extension is not yet in the Chrome Web Store, you can install it in D
     -   Click the **bookmark icon** (star) in the top tab bar to save the current chat.
     -   Access your saved chats via the **Bookmarks list** button in the sidebar.
     -   Click on a bookmark to open it. Use the **edit (pencil)** icon to rename bookmarks or the **delete (trash can)** icon to remove them.
-4.  **Settings**: Click the **Settings (gear icon)** in the bottom-left toolbar of the side panel (or right-click the extension icon and select "Options") to:
+4.  **Settings**: Click the **Settings (gear icon)** in the bottom-left toolbar of the side panel to open the **Settings Drawer**:
     -   Configure theme preferences (System, Light, or Dark).
     -   Adjust the content zoom level (50% - 120%) to better fit your screen.
     -   **Behavior**: Enable or disable tab persistence. Disabling it ensures a fresh start every time you open the panel.

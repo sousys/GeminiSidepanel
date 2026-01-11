@@ -35,7 +35,9 @@ export const DOMIds = {
     EDIT_BOOKMARK_TITLE: 'editBookmarkTitle',
     EDIT_BOOKMARK_URL: 'editBookmarkUrl',
     CANCEL_EDIT_BTN: 'cancelEditBtn',
-    SAVE_EDIT_BTN: 'saveEditBtn'
+    SAVE_EDIT_BTN: 'saveEditBtn',
+    SETTINGS_MODAL: 'settingsModal',
+    CLOSE_SETTINGS_BTN: 'closeSettingsBtn'
 };
 
 export const Origins = {

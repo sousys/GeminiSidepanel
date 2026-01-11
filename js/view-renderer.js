@@ -52,7 +52,11 @@ export class ViewRenderer extends EventTarget {
         if (this.bookmarkBtn) {
             this.bookmarkBtn.innerHTML = Icons.BOOKMARK_LIST;
             this.bookmarkBtn.addEventListener('click', () => {
-                this.openBookmarksModal();
+                if (this.bookmarksModal && this.bookmarksModal.classList.contains('open')) {
+                    this.closeBookmarksModal();
+                } else {
+                    this.openBookmarksModal();
+                }
             });
         }
 
