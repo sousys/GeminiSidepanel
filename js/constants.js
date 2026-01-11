@@ -1,7 +1,8 @@
 export const StorageKeys = {
     TABS: 'gemini_tabs',
     ACTIVE_TAB: 'gemini_active_tab',
-    PERSISTENCE_PREF: 'persistence_enabled'
+    PERSISTENCE_PREF: 'persistence_enabled',
+    BOOKMARKS: 'gemini_bookmarks'
 };
 
 export const MessageTypes = {
@@ -15,7 +16,8 @@ export const CSSClasses = {
     SLIDE_OUT: 'slide-out',
     TAB_TITLE: 'tab-title',
     CLOSE_TAB: 'close-tab',
-    COFFEE_BTN: 'coffee-btn'
+    COFFEE_BTN: 'coffee-btn',
+    BOOKMARKED: 'bookmarked'
 };
 
 export const DOMIds = {
@@ -23,7 +25,17 @@ export const DOMIds = {
     CONTENT_AREA: 'content-area',
     OPEN_BROWSER_BTN: 'openBrowserBtn',
     ADD_TAB_BTN: 'addTabBtn',
-    SETTINGS_BTN: 'settingsBtn'
+    SETTINGS_BTN: 'settingsBtn',
+    BOOKMARK_BTN: 'bookmarkBtn',
+    TOGGLE_BOOKMARK_BTN: 'toggleBookmarkBtn',
+    BOOKMARKS_MODAL: 'bookmarksModal',
+    CLOSE_MODAL_BTN: 'closeModalBtn',
+    BOOKMARKS_LIST: 'bookmarksList',
+    EDIT_BOOKMARK_DIALOG: 'editBookmarkDialog',
+    EDIT_BOOKMARK_TITLE: 'editBookmarkTitle',
+    EDIT_BOOKMARK_URL: 'editBookmarkUrl',
+    CANCEL_EDIT_BTN: 'cancelEditBtn',
+    SAVE_EDIT_BTN: 'saveEditBtn'
 };
 
 export const Origins = {

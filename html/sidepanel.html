@@ -7,15 +7,51 @@
   <body class="defaults theme-a adaptive">
     <div class="tab-bar" id="tabBar">
       <button class="add-tab-btn" id="addTabBtn" title="New Tab">+</button>
+      <button class="toggle-bookmark-btn" id="toggleBookmarkBtn" title="Toggle Bookmark"></button>
       <button class="open-browser-btn" id="openBrowserBtn" title="Open in Browser">&#x2197;</button>
     </div>
     <div id="content-wrapper">
       <div id="content-area"></div>
       <div id="side-toolbar">
-        <button class="toolbar-btn" id="settingsBtn" title="Settings"></button>
+        <button class="toolbar-btn" id="bookmarkBtn" title="Bookmarks"></button>
         <button class="toolbar-btn" id="coffeeBtn" title="Buy me a coffee"></button>
+        <button class="toolbar-btn" id="settingsBtn" title="Settings"></button>
       </div>
     </div>
+    
+    <div id="bookmarksModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Saved Chats</h2>
+                <button id="closeModalBtn" class="modal-close-btn">&times;</button>
+            </div>
+            <div id="bookmarksList">
+                <!-- Bookmarks will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <div id="editBookmarkDialog" class="edit-dialog-overlay">
+        <div class="edit-dialog-content">
+            <div class="edit-dialog-header">Edit Bookmark</div>
+            
+            <div class="edit-form-group">
+                <label class="edit-form-label">Name</label>
+                <input type="text" id="editBookmarkTitle" class="edit-form-input">
+            </div>
+            
+            <div class="edit-form-group">
+                <label class="edit-form-label">URL</label>
+                <input type="text" id="editBookmarkUrl" class="edit-form-input" readonly>
+            </div>
+
+            <div class="edit-dialog-actions">
+                <button id="cancelEditBtn" class="btn btn-secondary">Cancel</button>
+                <button id="saveEditBtn" class="btn btn-primary">Save</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module" src="../js/main.js"></script>
   </body>
 </html>
