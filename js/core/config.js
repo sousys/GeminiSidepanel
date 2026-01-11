@@ -36,6 +36,9 @@ export const DOMIds = {
     EDIT_BOOKMARK_URL: 'editBookmarkUrl',
     CANCEL_EDIT_BTN: 'cancelEditBtn',
     SAVE_EDIT_BTN: 'saveEditBtn',
+    DELETE_CONFIRM_DIALOG: 'deleteConfirmDialog',
+    CANCEL_DELETE_BTN: 'cancelDeleteBtn',
+    CONFIRM_DELETE_BTN: 'confirmDeleteBtn',
     SETTINGS_MODAL: 'settingsModal',
     CLOSE_SETTINGS_BTN: 'closeSettingsBtn'
 };

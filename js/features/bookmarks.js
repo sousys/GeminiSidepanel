@@ -99,6 +99,17 @@ export class BookmarksManager extends EventTarget {
                     </div>
                 </div>
             </div>
+
+            <div id="deleteConfirmDialog" class="edit-dialog-overlay">
+                <div class="edit-dialog-content" style="width: 250px;">
+                    <div class="edit-dialog-header">Delete Bookmark?</div>
+                    <div class="edit-form-label" style="margin-bottom: 8px;">Are you sure you want to delete this bookmark?</div>
+                    <div class="edit-dialog-actions">
+                        <button id="cancelDeleteBtn" class="btn btn-secondary">Cancel</button>
+                        <button id="confirmDeleteBtn" class="btn btn-primary" style="background: #ff6b6b; color: white;">Delete</button>
+                    </div>
+                </div>
+            </div>
         `;
     }
 }

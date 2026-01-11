@@ -19,6 +19,10 @@
   --radius-sm: 6px; /* Added from settings */
 }
 
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 body.light-theme {
   --bg-color: #ffffff;
   --tab-bar-bg: #f0f4f9;
@@ -240,10 +244,12 @@ body {
 
 .open-browser-btn {
   margin-left: auto;
+  margin-right: 0.125rem;
   font-size: 0.875rem;
 }
 
-.toggle-bookmark-btn svg {
+.toggle-bookmark-btn svg,
+.open-browser-btn svg {
   width: 16px;
   height: 16px;
 }
@@ -365,11 +371,13 @@ iframe.active {
 }
 
 .modal-header {
-    padding: 12px;
+    height: 2.25rem;
+    padding: 0 12px;
     border-bottom: 1px solid var(--border-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-shrink: 0;
 }
 
 .modal-header h2 {

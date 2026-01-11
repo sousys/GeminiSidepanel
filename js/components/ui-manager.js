@@ -49,6 +49,12 @@ export class ViewRenderer extends EventTarget {
         this.saveEditBtn = document.getElementById(DOMIds.SAVE_EDIT_BTN);
         this.currentEditingUrl = null;
 
+        // Delete Confirm UI
+        this.deleteConfirmDialog = document.getElementById(DOMIds.DELETE_CONFIRM_DIALOG);
+        this.cancelDeleteBtn = document.getElementById(DOMIds.CANCEL_DELETE_BTN);
+        this.confirmDeleteBtn = document.getElementById(DOMIds.CONFIRM_DELETE_BTN);
+        this.bookmarkToDelete = null;
+
         if (this.bookmarkBtn) {
             this.bookmarkBtn.innerHTML = Icons.BOOKMARK_LIST;
             this.bookmarkBtn.addEventListener('click', () => {
@@ -107,6 +113,28 @@ export class ViewRenderer extends EventTarget {
                 }
             });
         }
+
+        // Delete Confirm Events
+        if (this.cancelDeleteBtn) {
+            this.cancelDeleteBtn.addEventListener('click', () => this.closeDeleteConfirmDialog());
+        }
+
+        if (this.confirmDeleteBtn) {
+            this.confirmDeleteBtn.addEventListener('click', () => {
+                if (this.bookmarkToDelete) {
+                    this.dispatchEvent(new CustomEvent('bookmark-delete', { detail: this.bookmarkToDelete }));
+                    this.closeDeleteConfirmDialog();
+                }
+            });
+        }
+
+        if (this.deleteConfirmDialog) {
+            this.deleteConfirmDialog.addEventListener('click', (e) => {
+                if (e.target === this.deleteConfirmDialog) {
+                    this.closeDeleteConfirmDialog();
+                }
+            });
+        }
     }
 
     render(tabs, activeTabId) {
@@ -156,6 +184,20 @@ export class ViewRenderer extends EventTarget {
         }
     }
 
+    openDeleteConfirmDialog(bookmark) {
+        if (this.deleteConfirmDialog) {
+            this.bookmarkToDelete = bookmark;
+            this.deleteConfirmDialog.classList.add('open');
+        }
+    }
+
+    closeDeleteConfirmDialog() {
+        if (this.deleteConfirmDialog) {
+            this.deleteConfirmDialog.classList.remove('open');
+            this.bookmarkToDelete = null;
+        }
+    }
+
     renderBookmarksList(bookmarks) {
         if (!this.bookmarksList) return;
 
@@ -202,7 +244,7 @@ export class ViewRenderer extends EventTarget {
             
             deleteBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                this.dispatchEvent(new CustomEvent('bookmark-delete', { detail: bookmark }));
+                this.openDeleteConfirmDialog(bookmark);
             });
 
             itemEl.appendChild(titleEl);

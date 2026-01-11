@@ -115,7 +115,7 @@ export class TabBar extends EventTarget {
             <div class="tab-bar" id="tabBar">
               <button class="add-tab-btn" id="addTabBtn" title="New Tab">+</button>
               <button class="toggle-bookmark-btn" id="toggleBookmarkBtn" title="Toggle Bookmark"></button>
-              <button class="open-browser-btn" id="openBrowserBtn" title="Open in Browser">&#x2197;</button>
+              <button class="open-browser-btn" id="openBrowserBtn" title="Open in Browser">${Icons.OPEN_NEW}</button>
             </div>
         `;
     }
