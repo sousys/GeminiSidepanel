@@ -8,7 +8,7 @@
       }
    },
    "background": {
-      "service_worker": "js/service-worker.js"
+      "service_worker": "js/platform/service-worker.js"
    },
    "commands": {
       "_execute_action": {
@@ -21,7 +21,7 @@
    "content_scripts": [
       {
          "matches": [ "https://gemini.google.com/*" ],
-         "js": [ "js/content-script.js" ],
+         "js": [ "js/platform/content-script.js" ],
          "all_frames": true,
          "run_at": "document_start"
       }

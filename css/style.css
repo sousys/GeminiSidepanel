@@ -48,6 +48,22 @@ body {
   font-size: 14px; /* Default font size */
 }
 
+#app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+}
+
+#browser-container {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
 /* Wrapper for Content + Sidebar (Side-by-Side) */
 #content-wrapper {
   display: flex;

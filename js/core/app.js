@@ -1,11 +1,11 @@
-import { StateManager } from './state-handler.js';
-import { ViewRenderer } from './view-renderer.js';
-import { MessageTypes, DOMIds, Origins } from './constants.js';
-import { ThemeManager } from './theme-handler.js';
-import { SizeHandler } from './size-handler.js';
+import { StateManager } from './store.js';
+import { ViewRenderer } from '../components/ui-manager.js';
+import { MessageTypes, DOMIds, Origins } from './config.js';
+import { ThemeManager } from '../features/theme.js';
+import { SizeHandler } from '../features/zoom.js';
 import { Icons } from './icons.js';
-import { BookmarksManager } from './bookmarks.js';
-import { SettingsHandler } from './settings.js';
+import { BookmarksManager } from '../features/bookmarks.js';
+import { SettingsHandler } from '../features/settings.js';
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
@@ -15,8 +15,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     const bookmarks = new BookmarksManager();
     const settings = new SettingsHandler();
 
+    // Render Components
+    const modalsContainer = document.getElementById('modals-container');
+    const tabBarContainer = document.getElementById('tab-bar-container');
+    const browserContainer = document.getElementById('browser-container');
+
+    if (modalsContainer) {
+        settings.render(modalsContainer);
+        bookmarks.render(modalsContainer);
+    }
+
+    if (tabBarContainer && view.tabBar) {
+        view.tabBar.renderUI(tabBarContainer);
+    }
+
+    if (browserContainer) {
+        view.renderBrowser(browserContainer);
+    }
+
     view.init();
-    settings.init();
+    // settings.init() is called within render()
     
     await ThemeManager.init();
     SizeHandler.init();

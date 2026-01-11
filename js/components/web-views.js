@@ -1,4 +1,4 @@
-import { CSSClasses, Timeouts, Permissions, MessageTypes } from './constants.js';
+import { CSSClasses, Timeouts, Permissions, MessageTypes } from '../core/config.js';
 
 export class IframeHandler {
     constructor() {

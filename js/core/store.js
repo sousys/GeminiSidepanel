@@ -1,4 +1,4 @@
-import { StorageKeys, Defaults, Timeouts } from './constants.js';
+import { StorageKeys, Defaults, Timeouts } from './config.js';
 import { generateId } from './utils.js';
 
 export class StateManager {

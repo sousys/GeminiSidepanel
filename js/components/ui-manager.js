@@ -1,7 +1,7 @@
-import { DOMIds, CSSClasses } from './constants.js';
-import { TabBar } from './tab-bar.js';
-import { IframeHandler } from './iframe-handler.js';
-import { Icons } from './icons.js';
+import { DOMIds, CSSClasses } from '../core/config.js';
+import { TabBar } from './tabs-ui.js';
+import { IframeHandler } from './web-views.js';
+import { Icons } from '../core/icons.js';
 
 export class ViewRenderer extends EventTarget {
     constructor() {
@@ -210,5 +210,22 @@ export class ViewRenderer extends EventTarget {
             itemEl.appendChild(deleteBtn);
             this.bookmarksList.appendChild(itemEl);
         });
+    }
+
+    renderBrowser(container) {
+        container.insertAdjacentHTML('beforeend', this.getBrowserTemplate());
+    }
+
+    getBrowserTemplate() {
+        return `
+            <div id="content-wrapper">
+              <div id="content-area"></div>
+              <div id="side-toolbar">
+                <button class="toolbar-btn" id="bookmarkBtn" title="Bookmarks"></button>
+                <button class="toolbar-btn" id="coffeeBtn" title="Buy me a coffee"></button>
+                <button class="toolbar-btn" id="settingsBtn" title="Settings"></button>
+              </div>
+            </div>
+        `;
     }
 }
