@@ -1,12 +1,20 @@
-import { DOMIds } from './constants.js';
+import { DOMIds, CSSClasses } from './constants.js';
 import { TabBar } from './tab-bar.js';
 import { IframeHandler } from './iframe-handler.js';
+import { Icons } from './icons.js';
 
 export class ViewRenderer extends EventTarget {
     constructor() {
         super();
         this.tabBar = new TabBar();
         this.iframeHandler = new IframeHandler();
+        
+        // UI Elements
+        this.bookmarkBtn = null;
+        this.toggleBookmarkBtn = null;
+        this.bookmarksModal = null;
+        this.bookmarksList = null;
+        this.closeModalBtn = null;
     }
 
     init() {
@@ -25,10 +33,182 @@ export class ViewRenderer extends EventTarget {
         this.tabBar.addEventListener('tab-close', (e) => {
             this.dispatchEvent(new CustomEvent('tab-close', { detail: e.detail }));
         });
+
+        // Initialize Bookmark UI
+        this.bookmarkBtn = document.getElementById(DOMIds.BOOKMARK_BTN);
+        this.toggleBookmarkBtn = document.getElementById(DOMIds.TOGGLE_BOOKMARK_BTN);
+        this.bookmarksModal = document.getElementById(DOMIds.BOOKMARKS_MODAL);
+        this.bookmarksList = document.getElementById(DOMIds.BOOKMARKS_LIST);
+        this.closeModalBtn = document.getElementById(DOMIds.CLOSE_MODAL_BTN);
+        
+        // Edit Dialog UI
+        this.editDialog = document.getElementById(DOMIds.EDIT_BOOKMARK_DIALOG);
+        this.editTitleInput = document.getElementById(DOMIds.EDIT_BOOKMARK_TITLE);
+        this.editUrlInput = document.getElementById(DOMIds.EDIT_BOOKMARK_URL);
+        this.cancelEditBtn = document.getElementById(DOMIds.CANCEL_EDIT_BTN);
+        this.saveEditBtn = document.getElementById(DOMIds.SAVE_EDIT_BTN);
+        this.currentEditingUrl = null;
+
+        if (this.bookmarkBtn) {
+            this.bookmarkBtn.innerHTML = Icons.BOOKMARK_LIST;
+            this.bookmarkBtn.addEventListener('click', () => {
+                if (this.bookmarksModal && this.bookmarksModal.classList.contains('open')) {
+                    this.closeBookmarksModal();
+                } else {
+                    this.openBookmarksModal();
+                }
+            });
+        }
+
+        if (this.toggleBookmarkBtn) {
+            // Initial Icon (Outline)
+            this.toggleBookmarkBtn.innerHTML = Icons.BOOKMARK_OUTLINE;
+            this.toggleBookmarkBtn.addEventListener('click', () => {
+                this.dispatchEvent(new CustomEvent('bookmark-toggle'));
+            });
+        }
+
+        if (this.closeModalBtn) {
+            this.closeModalBtn.addEventListener('click', () => {
+                this.closeBookmarksModal();
+            });
+        }
+
+        // Close modal on outside click
+        if (this.bookmarksModal) {
+            this.bookmarksModal.addEventListener('click', (e) => {
+                if (e.target === this.bookmarksModal) {
+                    this.closeBookmarksModal();
+                }
+            });
+        }
+        
+        // Edit Dialog Events
+        if (this.cancelEditBtn) {
+            this.cancelEditBtn.addEventListener('click', () => this.closeEditDialog());
+        }
+        
+        if (this.saveEditBtn) {
+            this.saveEditBtn.addEventListener('click', () => {
+                const newTitle = this.editTitleInput.value.trim();
+                if (newTitle && this.currentEditingUrl) {
+                    this.dispatchEvent(new CustomEvent('bookmark-update', { 
+                        detail: { url: this.currentEditingUrl, title: newTitle } 
+                    }));
+                    this.closeEditDialog();
+                }
+            });
+        }
+        
+        if (this.editDialog) {
+            this.editDialog.addEventListener('click', (e) => {
+                if (e.target === this.editDialog) {
+                    this.closeEditDialog();
+                }
+            });
+        }
     }
 
     render(tabs, activeTabId) {
         this.tabBar.render(tabs, activeTabId);
         this.iframeHandler.render(tabs, activeTabId);
+    }
+
+    updateBookmarkButton(isBookmarked) {
+        if (!this.toggleBookmarkBtn) return;
+
+        if (isBookmarked) {
+            this.toggleBookmarkBtn.innerHTML = Icons.BOOKMARK_FILLED;
+            this.toggleBookmarkBtn.classList.add(CSSClasses.BOOKMARKED);
+        } else {
+            this.toggleBookmarkBtn.innerHTML = Icons.BOOKMARK_OUTLINE;
+            this.toggleBookmarkBtn.classList.remove(CSSClasses.BOOKMARKED);
+        }
+    }
+
+    openBookmarksModal() {
+        if (this.bookmarksModal) {
+            this.bookmarksModal.classList.add('open');
+            this.dispatchEvent(new CustomEvent('bookmarks-modal-open'));
+        }
+    }
+
+    closeBookmarksModal() {
+        if (this.bookmarksModal) {
+            this.bookmarksModal.classList.remove('open');
+        }
+    }
+    
+    openEditDialog(bookmark) {
+        if (this.editDialog) {
+            this.currentEditingUrl = bookmark.url;
+            this.editTitleInput.value = bookmark.title;
+            this.editUrlInput.value = bookmark.url;
+            this.editDialog.classList.add('open');
+            this.editTitleInput.focus();
+        }
+    }
+
+    closeEditDialog() {
+        if (this.editDialog) {
+            this.editDialog.classList.remove('open');
+            this.currentEditingUrl = null;
+        }
+    }
+
+    renderBookmarksList(bookmarks) {
+        if (!this.bookmarksList) return;
+
+        this.bookmarksList.innerHTML = '';
+
+        if (bookmarks.length === 0) {
+            const emptyEl = document.createElement('div');
+            emptyEl.className = 'empty-state';
+            emptyEl.textContent = 'No saved chats yet.';
+            this.bookmarksList.appendChild(emptyEl);
+            return;
+        }
+
+        bookmarks.forEach(bookmark => {
+            const itemEl = document.createElement('div');
+            itemEl.className = 'bookmark-item';
+
+            const titleEl = document.createElement('span');
+            titleEl.className = 'bookmark-title';
+            titleEl.textContent = bookmark.title;
+            titleEl.title = bookmark.title; // Tooltip
+            
+            // Open bookmark on click
+            titleEl.addEventListener('click', () => {
+                this.dispatchEvent(new CustomEvent('bookmark-select', { detail: bookmark }));
+                this.closeBookmarksModal();
+            });
+
+            // Edit Button
+            const editBtn = document.createElement('button');
+            editBtn.className = 'bookmark-action-btn';
+            editBtn.innerHTML = Icons.EDIT;
+            editBtn.title = 'Edit';
+            editBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.openEditDialog(bookmark);
+            });
+
+            // Delete Button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'bookmark-action-btn bookmark-delete-btn';
+            deleteBtn.innerHTML = Icons.DELETE;
+            deleteBtn.title = 'Remove';
+            
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.dispatchEvent(new CustomEvent('bookmark-delete', { detail: bookmark }));
+            });
+
+            itemEl.appendChild(titleEl);
+            itemEl.appendChild(editBtn);
+            itemEl.appendChild(deleteBtn);
+            this.bookmarksList.appendChild(itemEl);
+        });
     }
 }

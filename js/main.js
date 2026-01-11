@@ -4,14 +4,19 @@ import { MessageTypes, DOMIds, Origins } from './constants.js';
 import { ThemeManager } from './theme-handler.js';
 import { SizeHandler } from './size-handler.js';
 import { Icons } from './icons.js';
+import { BookmarksManager } from './bookmarks.js';
+import { SettingsHandler } from './settings.js';
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
     
     const state = new StateManager();
     const view = new ViewRenderer();
+    const bookmarks = new BookmarksManager();
+    const settings = new SettingsHandler();
 
     view.init();
+    settings.init();
     
     await ThemeManager.init();
     SizeHandler.init();
@@ -19,6 +24,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Subscribe to store changes to trigger render
     state.subscribe((tabs, activeTabId) => {
         view.render(tabs, activeTabId);
+        
+        // Update bookmark button state for the new active tab
+        const activeTab = state.getActiveTab();
+        if (activeTab) {
+            view.updateBookmarkButton(bookmarks.isBookmarked(activeTab.url));
+        }
+    });
+
+    // Subscribe to bookmarks changes
+    bookmarks.addEventListener('bookmarks-changed', (e) => {
+        const currentBookmarks = e.detail.bookmarks;
+        view.renderBookmarksList(currentBookmarks);
+        
+        // Also update the button state as the active tab might have been affected
+        const activeTab = state.getActiveTab();
+        if (activeTab) {
+            view.updateBookmarkButton(bookmarks.isBookmarked(activeTab.url));
+        }
     });
 
     // View Events
@@ -31,6 +54,40 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Ensure at least one tab exists
         if (state.getTabs().length === 0) {
             state.addTab();
+        }
+    });
+
+    // Bookmark Events
+    view.addEventListener('bookmark-toggle', async () => {
+        const activeTab = state.getActiveTab();
+        if (activeTab && activeTab.url && !activeTab.url.startsWith('chrome-extension://')) {
+            await bookmarks.toggle(activeTab.title, activeTab.url);
+        }
+    });
+
+    view.addEventListener('bookmarks-modal-open', () => {
+        // Refresh list just in case
+        view.renderBookmarksList(bookmarks.getBookmarks());
+        // Close settings if open
+        settings.closeModal();
+    });
+
+    view.addEventListener('bookmark-delete', async (e) => {
+        await bookmarks.remove(e.detail.url);
+    });
+
+    view.addEventListener('bookmark-update', async (e) => {
+        await bookmarks.update(e.detail.url, e.detail.title);
+    });
+
+    view.addEventListener('bookmark-select', (e) => {
+        const bookmark = e.detail;
+        const existingTab = state.getTabs().find(t => t.url === bookmark.url);
+        
+        if (existingTab) {
+            state.setActiveTab(existingTab.id);
+        } else {
+            state.addTab(bookmark.title, bookmark.url);
         }
     });
 
@@ -60,23 +117,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (settingsBtn) {
         settingsBtn.innerHTML = Icons.SETTINGS;
         settingsBtn.addEventListener('click', () => {
-            const settingsUrl = chrome.runtime.getURL('html/settings.html');
-            const existingTab = state.getTabs().find(t => t.url === settingsUrl);
-            
-            if (existingTab) {
-                if (state.getActiveTabId() === existingTab.id) {
-                    // Toggle off: Close if already active
-                    state.removeTab(existingTab.id);
-                    // Ensure at least one tab exists (handled by tab-close listener usually, but removeTab triggers it)
-                    if (state.getTabs().length === 0) {
-                        state.addTab();
-                    }
-                } else {
-                    // Switch to existing
-                    state.setActiveTab(existingTab.id);
-                }
+            if (settings.isOpen()) {
+                settings.closeModal();
             } else {
-                state.addTab('Settings', settingsUrl);
+                // Close bookmarks if open
+                view.closeBookmarksModal();
+                settings.openModal();
             }
         });
     }
@@ -107,6 +153,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Initialize Store (loads state)
     await state.init();
+    await bookmarks.init(); // Initialize bookmarks
 
     // Ensure at least one tab exists
     if (state.getTabs().length === 0) {
