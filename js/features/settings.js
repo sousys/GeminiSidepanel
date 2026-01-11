@@ -11,7 +11,7 @@ export class SettingsManager {
         this.modal = null;
     }
 
-    init() {
+    async init() {
         this.statusElement = document.getElementById('settingsStatus');
         this.themeRadios = document.querySelectorAll('input[name="theme"]');
         this.zoomSlider = document.getElementById('zoomSlider');
@@ -20,12 +20,14 @@ export class SettingsManager {
         this.closeBtn = document.getElementById('closeSettingsBtn');
         this.modal = document.getElementById('settingsModal');
 
-        this.loadSettings();
+        await this.loadSettings();
         this.attachListeners();
     }
 
-    loadSettings() {
-        chrome.storage.sync.get(['theme_preference', 'panel_zoom', 'persistence_enabled'], (data) => {
+    async loadSettings() {
+        try {
+            const data = await chrome.storage.sync.get(['theme_preference', 'panel_zoom', 'persistence_enabled']);
+            
             const currentTheme = data.theme_preference || 'system';
             if (this.themeRadios) {
                 for (const radio of this.themeRadios) {
@@ -50,18 +52,25 @@ export class SettingsManager {
                 // Default to true if undefined
                 this.persistenceCheckbox.checked = data.persistence_enabled !== false;
             }
-        });
+        } catch (error) {
+            console.error('Failed to load settings:', error);
+            this.showStatus('Failed to load settings');
+        }
     }
 
     attachListeners() {
         if (this.themeRadios) {
             this.themeRadios.forEach(radio => {
-                radio.addEventListener('change', () => {
+                radio.addEventListener('change', async () => {
                     if (radio.checked) {
                         const theme = radio.value;
-                        chrome.storage.sync.set({ 'theme_preference': theme }, () => {
+                        try {
+                            await chrome.storage.sync.set({ 'theme_preference': theme });
                             this.showStatus('Theme preference saved!');
-                        });
+                        } catch (error) {
+                            console.error('Failed to save theme:', error);
+                            this.showStatus('Failed to save theme');
+                        }
                     }
                 });
             });
@@ -74,20 +83,28 @@ export class SettingsManager {
                 }
             });
 
-            this.zoomSlider.addEventListener('change', () => {
+            this.zoomSlider.addEventListener('change', async () => {
                 const zoom = parseInt(this.zoomSlider.value, 10);
-                chrome.storage.sync.set({ 'panel_zoom': zoom }, () => {
+                try {
+                    await chrome.storage.sync.set({ 'panel_zoom': zoom });
                     this.showStatus('Zoom preference saved!');
-                });
+                } catch (error) {
+                    console.error('Failed to save zoom:', error);
+                    this.showStatus('Failed to save zoom');
+                }
             });
         }
 
         if (this.persistenceCheckbox) {
-            this.persistenceCheckbox.addEventListener('change', () => {
+            this.persistenceCheckbox.addEventListener('change', async () => {
                 const enabled = this.persistenceCheckbox.checked;
-                chrome.storage.sync.set({ 'persistence_enabled': enabled }, () => {
+                try {
+                    await chrome.storage.sync.set({ 'persistence_enabled': enabled });
                     this.showStatus('Persistence setting saved!');
-                });
+                } catch (error) {
+                    console.error('Failed to save persistence:', error);
+                    this.showStatus('Failed to save persistence');
+                }
             });
         }
         
@@ -113,11 +130,11 @@ export class SettingsManager {
         }
     }
 
-    openModal() {
+    async openModal() {
         if (this.modal) {
             this.modal.classList.add('open');
             // Refresh settings in case they were changed elsewhere
-            this.loadSettings();
+            await this.loadSettings();
         }
     }
 

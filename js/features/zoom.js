@@ -1,14 +1,11 @@
 export class ZoomManager {
     constructor() {
         this.STORAGE_KEY = 'panel_zoom';
+        this.DEFAULT_ZOOM = 100;
     }
 
-    init() {
-        // Initial load
-        chrome.storage.sync.get(this.STORAGE_KEY, (data) => {
-            const currentZoom = data[this.STORAGE_KEY] || 100;
-            this.applyZoom(currentZoom);
-        });
+    async init() {
+        await this.loadZoomLevel();
 
         // Listen for changes
         chrome.storage.onChanged.addListener((changes, namespace) => {
@@ -16,6 +13,17 @@ export class ZoomManager {
                 this.applyZoom(changes[this.STORAGE_KEY].newValue);
             }
         });
+    }
+
+    async loadZoomLevel() {
+        try {
+            const data = await chrome.storage.sync.get(this.STORAGE_KEY);
+            const currentZoom = data[this.STORAGE_KEY] || this.DEFAULT_ZOOM;
+            this.applyZoom(currentZoom);
+        } catch (error) {
+            console.error('Failed to load zoom level:', error);
+            this.applyZoom(this.DEFAULT_ZOOM);
+        }
     }
 
     applyZoom(zoomPercent) {

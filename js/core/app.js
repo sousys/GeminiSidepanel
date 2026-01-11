@@ -42,11 +42,11 @@ class App {
         await this.themeManager.init();
         this.zoomManager.init();
         
+        this.bindEvents();
+
         // Initialize State & Bookmarks
         await this.state.init();
         await this.bookmarks.init();
-
-        this.bindEvents();
         
         // Ensure at least one tab exists
         if (this.state.getTabs().length === 0) {
