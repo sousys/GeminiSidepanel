@@ -1,7 +1,9 @@
-export const ThemeManager = {
-    STORAGE_KEY: 'theme_preference',
-    currentMode: 'system', // 'system', 'light', 'dark'
-    systemMediaQuery: window.matchMedia('(prefers-color-scheme: dark)'),
+export class ThemeManager {
+    constructor() {
+        this.STORAGE_KEY = 'theme_preference';
+        this.currentMode = 'system'; // 'system', 'light', 'dark'
+        this.systemMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    }
 
     async init() {
         // Load preference
@@ -24,7 +26,7 @@ export const ThemeManager = {
                 this.apply();
             }
         });
-    },
+    }
 
     apply() {
         let effectiveTheme = this.currentMode;
@@ -40,11 +42,11 @@ export const ThemeManager = {
             document.body.classList.remove('light-theme');
             document.body.classList.add('dark-theme');
         }
-    },
+    }
 
     async setTheme(mode) {
         this.currentMode = mode;
         this.apply();
         await chrome.storage.sync.set({ [this.STORAGE_KEY]: mode });
     }
-};
+}

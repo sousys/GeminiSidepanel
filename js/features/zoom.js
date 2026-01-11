@@ -1,5 +1,7 @@
-export const SizeHandler = {
-    STORAGE_KEY: 'panel_zoom',
+export class ZoomManager {
+    constructor() {
+        this.STORAGE_KEY = 'panel_zoom';
+    }
 
     init() {
         // Initial load
@@ -14,7 +16,7 @@ export const SizeHandler = {
                 this.applyZoom(changes[this.STORAGE_KEY].newValue);
             }
         });
-    },
+    }
 
     applyZoom(zoomPercent) {
         if (!zoomPercent) return;
@@ -22,4 +24,4 @@ export const SizeHandler = {
         document.body.style.zoom = zoomLevel;
         document.body.style.height = (100 / zoomLevel) + 'vh';
     }
-};
+}

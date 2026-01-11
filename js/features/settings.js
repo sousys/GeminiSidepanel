@@ -1,6 +1,6 @@
 import { DOMIds } from '../core/config.js';
 
-export class SettingsHandler {
+export class SettingsManager {
     constructor() {
         this.statusElement = null;
         this.themeRadios = null;
