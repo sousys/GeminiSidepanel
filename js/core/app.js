@@ -25,7 +25,7 @@ class App {
 
         if (modalsContainer) {
             this.settings.render(modalsContainer);
-            this.bookmarks.render(modalsContainer);
+            this.view.renderModals(modalsContainer);
         }
 
         if (tabBarContainer && this.view.tabBar) {
