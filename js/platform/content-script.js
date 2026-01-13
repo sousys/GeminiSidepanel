@@ -5,15 +5,15 @@
     const CONFIG = {
         // Selectors are likely to break; keep them centralized here
         SELECTORS: {
-            SIDEBAR_CONTAINER: 'conversations-list',
-            SIDEBAR_LINK_ACTIVE: 'a[aria-current="page"]',
-            SIDEBAR_ITEM_SELECTED: '.conversation.selected .conversation-title',
-            HEADER_TITLE: '.conversation-title'
+            // Priority 1: Match the specific sidebar item using the ID
+            // We look for divs (buttons) or links that contain the ID in their attributes
+            SIDEBAR_ITEM_BY_ATTRIBUTE: (id) => `[jslog*="${id}"], a[href*="${id}"]`,
+            SIDEBAR_CONTAINER: 'conversations-list'
         },
         // Timing settings
         TIMING: {
-            DEBOUNCE_MS: 500,
-            INIT_RETRY_MS: 500,
+            DEBOUNCE_MS: 100,
+            INIT_RETRY_MS: 300,
             INIT_TIMEOUT_MS: 10000
         },
         // Routes
@@ -50,7 +50,6 @@
     // ------------------------------------------------------------------------
 
     function init() {
-        injectStyles();
         reportState();
 
         // Try to attach observer (with retry if Angular hasn't loaded sidebar yet)
@@ -90,22 +89,27 @@
         if (isNewChat) {
             currentTitle = 'New';
         } else {
-            // Use config selectors instead of hardcoded strings
-            const sidebarLink = document.querySelector(CONFIG.SELECTORS.SIDEBAR_LINK_ACTIVE);
-            const selectedItem = document.querySelector(CONFIG.SELECTORS.SIDEBAR_ITEM_SELECTED);
-            const headerTitle = document.querySelector(CONFIG.SELECTORS.HEADER_TITLE);
+            // 1. Try to extract the conversation ID from the URL
+            // Path structure: /app/{conversationId}
+            const pathSegments = urlObj.pathname.split('/').filter(Boolean);
+            console.log(pathSegments);
+            const conversationId = (pathSegments.length > 1 && pathSegments[0] === 'app') ? pathSegments[1] : null;
+            console.log('Conversation ID:', conversationId);
 
-            // Priority 1: Sidebar Active Link (Legacy/Standard)
-            if (sidebarLink && sidebarLink.innerText.trim()) {
-                currentTitle = sidebarLink.innerText.trim();
-            }
-            // Priority 2: Selected Item in List (New HTML Structure)
-            else if (selectedItem && selectedItem.innerText.trim()) {
-                currentTitle = selectedItem.innerText.trim();
-            }
-            // Priority 3: Header Title (Fallback)
-            else if (headerTitle && headerTitle.innerText.trim()) {
-                currentTitle = headerTitle.innerText.trim();
+            if (conversationId) {
+                const sidebarContainer = document.querySelector(CONFIG.SELECTORS.SIDEBAR_CONTAINER);
+                
+                if (sidebarContainer) {
+                    const selector = CONFIG.SELECTORS.SIDEBAR_ITEM_BY_ATTRIBUTE(conversationId);
+                    const sidebarItem = sidebarContainer.querySelector(selector);
+                    
+                    if (sidebarItem) {
+                        // Try to find a title element inside (like .conversation-title), otherwise use the item's text
+                        // We check for common title classes used in Gemini
+                        const titleElement = sidebarItem.querySelector('.conversation-title') || sidebarItem;
+                        currentTitle = titleElement.innerText.trim();
+                    }
+                }
             }
         }
 
@@ -147,18 +151,6 @@
             return true;
         }
         return false;
-    }
-
-    function injectStyles() {
-        const style = document.createElement('style');
-        style.textContent = `
-            ${CONFIG.SELECTORS.HEADER_TITLE} {
-                display: block !important;
-                visibility: visible !important;
-                opacity: 1 !important;
-            }
-        `;
-        (document.head || document.documentElement).appendChild(style);
     }
 
     function patchHistory(method) {
