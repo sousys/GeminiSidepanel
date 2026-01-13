@@ -5,8 +5,6 @@
     const CONFIG = {
         // Selectors are likely to break; keep them centralized here
         SELECTORS: {
-            // Priority 1: Match the specific sidebar item using the ID
-            // We look for divs (buttons) or links that contain the ID in their attributes
             SIDEBAR_ITEM_BY_ATTRIBUTE: (id) => `[jslog*="${id}"], a[href*="${id}"]`,
             SIDEBAR_CONTAINER: 'conversations-list'
         },
@@ -27,7 +25,6 @@
     // ==========================================
     const EXTENSION_ORIGIN = chrome.runtime.getURL('').slice(0, -1);
     
-    // Capture the tab ID immediately in case window.name is overwritten later
     const initialTabId = window.name;
     
     let lastUrl = location.href;
@@ -89,12 +86,8 @@
         if (isNewChat) {
             currentTitle = 'New';
         } else {
-            // 1. Try to extract the conversation ID from the URL
-            // Path structure: /app/{conversationId}
             const pathSegments = urlObj.pathname.split('/').filter(Boolean);
-            console.log(pathSegments);
             const conversationId = (pathSegments.length > 1 && pathSegments[0] === 'app') ? pathSegments[1] : null;
-            console.log('Conversation ID:', conversationId);
 
             if (conversationId) {
                 const sidebarContainer = document.querySelector(CONFIG.SELECTORS.SIDEBAR_CONTAINER);
