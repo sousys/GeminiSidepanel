@@ -97,8 +97,6 @@
                     const sidebarItem = sidebarContainer.querySelector(selector);
                     
                     if (sidebarItem) {
-                        // Try to find a title element inside (like .conversation-title), otherwise use the item's text
-                        // We check for common title classes used in Gemini
                         const titleElement = sidebarItem.querySelector('.conversation-title') || sidebarItem;
                         currentTitle = titleElement.innerText.trim();
                     }
