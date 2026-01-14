@@ -85,7 +85,7 @@ body {
   flex-direction: column;
   align-items: center;
   padding-top: 0.25rem;
-  padding-bottom: 0.25rem; /* Add padding at bottom */
+  padding-bottom: 1.25rem; /* Add padding at bottom */
   gap: 0.25rem;
   flex-shrink: 0;
 }
