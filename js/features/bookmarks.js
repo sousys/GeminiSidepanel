@@ -1,4 +1,4 @@
-import { StorageKeys } from './constants.js';
+import { StorageKeys } from '../core/config.js';
 
 export class BookmarksManager extends EventTarget {
     constructor() {

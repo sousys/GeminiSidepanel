@@ -44,79 +44,66 @@ Since this extension is not yet in the Chrome Web Store, you can install it in D
 
 ## Technical Architecture
 
-This extension uses a **Model-View-Controller (MVC)** like architecture to manage the side panel state and UI.
+This extension uses a modern, modular **Component-Based Architecture** with **JS-Driven UI Rendering**. The codebase is organized into distinct layers for core logic, reusable components, feature modules, and platform-specific scripts.
 
-### Core Components
+### Architectural Layers
 
-1.  **Service Worker (`service-worker.js`)**:
-    -   Handles the extension's lifecycle and side panel behavior.
-    -   **Critical**: Uses the `declarativeNetRequest` API to strip `X-Frame-Options` and `Content-Security-Policy` headers from `gemini.google.com` responses. This allows the Gemini web application to be embedded within an `iframe` in the side panel.
+1.  **Core (`js/core/`)**:
+    -   **`app.js`**: The main entry point and controller. It initializes the application, composes components, and handles high-level event coordination.
+    -   **`store.js`**: The centralized State Manager (Model). It manages the single source of truth for tabs and active state, handling persistence and notifying subscribers of changes.
+    -   **`config.js`**: Centralized configuration for constants, DOM IDs, CSS classes, and timeouts.
+    -   **`utils.js`**: Shared utility functions.
 
-2.  **State Management (`js/state-handler.js`)**:
-    -   Acts as the **Model**.
-    -   Manages the single source of truth for the application state (list of open tabs, active tab ID).
-    -   Persists state to `chrome.storage.local` (respecting the persistence preference).
-    -   Implements a subscription pattern to notify other components of state changes.
+2.  **Components (`js/components/`)**:
+    -   **`ui-manager.js` (ViewRenderer)**: The primary UI orchestrator. It manages the lifecycle of the UI, including modals and event delegation.
+    -   **`tabs-ui.js` (TabBar)**: Manages the tab strip interface, including rendering, switching, and animation logic.
+    -   **`web-views.js` (IframeHandler)**: Handles the creation and lifecycle of `iframe` elements. It implements performance optimizations like lazy-loading and inactivity unloading.
 
-3.  **Bookmarks Management (`js/bookmarks.js`)**:
-    -   Manages the storage and retrieval of bookmarked chats in `chrome.storage.local`.
-    -   Provides methods to add, remove, toggle, and update bookmarks.
+3.  **Features (`js/features/`)**:
+    -   **`bookmarks.js`**: Manages bookmark storage, logic, and its specific UI rendering (Modals).
+    -   **`settings.js`**: Handles user preferences (theme, zoom, persistence) and the Settings UI.
+    -   **`theme.js`**: Manages theme application and synchronization with system/browser preferences.
+    -   **`zoom.js`**: Handles content scaling logic.
 
-4.  **Main Controller (`js/main.js`)**:
-    -   Acts as the **Controller**.
-    -   Initializes the application.
-    -   Listens for UI events (tab clicks, new tab creation, bookmark actions) and delegates them to the `StateManager` or `BookmarksManager`.
-    -   Receives messages from the `content-script.js` to update tab titles and URLs.
+4.  **Platform (`js/platform/`)**:
+    -   **`service-worker.js`**: The background service worker. Handles extension lifecycle and uses `declarativeNetRequest` to strip `X-Frame-Options` headers, allowing Gemini to run in the side panel.
+    -   **`content-script.js`**: Injected into the Gemini frame to bridge communication (URL/Title updates) between the SPA and the extension using `postMessage`.
 
-5.  **View Rendering (`js/view-renderer.js`, `js/tab-bar.js`, `js/iframe-handler.js`)**:
-    -   Acts as the **View**.
-    -   `ViewRenderer` orchestrates the UI updates, including the new Bookmarks Drawer and Edit Dialog.
-    -   `TabBar` manages the tab strip UI.
-    -   `IframeHandler` handles the `iframe` elements. It implements **performance optimizations** by:
-        -   Lazy-loading iframes only when they are activated.
-        -   Unloading iframes that haven't been accessed recently to free up memory.
+### Key Design Decisions
 
-6.  **Content Script (`js/content-script.js`)**:
-    -   Injected into the `gemini.google.com` iframe.
-    -   Patches the browser's History API (`pushState`, `replaceState`) to detect client-side navigation within the Gemini SPA.
-    -   Communicates URL and Title changes back to the parent extension via `window.parent.postMessage`.
-
-7.  **Zoom Management (`js/size-handler.js`)**:
-    -   Handles the application of the zoom level to the side panel body.
-    -   Ensures the viewport is correctly filled by dynamically adjusting height based on the zoom factor.
-
-## Permissions
-
-This extension requires the following permissions:
-
--   `sidePanel`: To render the interface in the browser's side panel.
--   `storage`: To save your open tabs, bookmarks, and settings locally.
--   `declarativeNetRequest`: To modify response headers for iframe compatibility.
--   `host_permissions` (`https://gemini.google.com/*`): To embed the Gemini web interface and synchronize navigation state.
+-   **JS-Driven Rendering**: HTML files are minimal (only `sidepanel.html` exists as a skeleton). All other UI components (tabs, modals, lists) are rendered dynamically via JavaScript template literals. This allows for a more flexible and component-oriented structure.
+-   **Event-Driven Communication**: Components communicate via `CustomEvent` dispatching (e.g., `tab-switch`, `bookmark-toggle`) and a subscription pattern in the State Manager.
+-   **Performance**: Background tabs are lazy-loaded to minimize memory usage, and the state is persisted to `chrome.storage` with debouncing.
 
 ## Project Structure
 
 ```text
-├── css/                # Stylesheets
-├── html/               # HTML templates (sidepanel, settings)
-├── images/             # Icons and assets
+├── css/
+│   └── style.css            # Global styles and theme definitions
+├── html/
+│   └── sidepanel.html       # Main entry point (skeleton)
+├── images/                  # Icons and assets
 ├── js/
-│   ├── bookmarks.js    # Bookmarking logic
-│   ├── constants.js    # Global constants
-│   ├── iframe-handler.js  # Iframe lifecycle & optimization
-│   ├── content-script.js  # Injected script for Gemini integration
-│   ├── icons.js        # SVG icon definitions
-│   ├── main.js         # Entry point & controller
-│   ├── settings.js      # Settings page logic
-│   ├── service-worker.js # Background process & network handling
-│   ├── size-handler.js   # Content zoom logic
-│   ├── state-handler.js  # State management & storage
-│   ├── tab-bar.js      # Tab strip UI logic
-│   ├── theme-handler.js # Theme synchronization
-│   ├── utils.js        # Helper functions
-│   └── view-renderer.js   # UI orchestration
-├── manifest.json       # Extension configuration (Manifest V3)
-└── README.md           # This file
+│   ├── components/          # UI Components
+│   │   ├── tabs-ui.js
+│   │   ├── ui-manager.js
+│   │   └── web-views.js
+│   ├── core/                # Core Application Logic
+│   │   ├── app.js
+│   │   ├── config.js
+│   │   ├── icons.js
+│   │   ├── store.js
+│   │   └── utils.js
+│   ├── features/            # Feature Modules
+│   │   ├── bookmarks.js
+│   │   ├── settings.js
+│   │   ├── theme.js
+│   │   └── zoom.js
+│   └── platform/            # Browser/Extension Platform Scripts
+│       ├── content-script.js
+│       └── service-worker.js
+├── manifest.json            # Extension configuration (Manifest V3)
+└── README.md                # This file
 ```
 
 ## License

@@ -1,4 +1,4 @@
-import { CSSClasses, Timeouts, Permissions, MessageTypes } from './constants.js';
+import { CSSClasses, Timeouts, Permissions, MessageTypes } from '../core/config.js';
 
 export class IframeHandler {
     constructor() {
@@ -104,8 +104,19 @@ export class IframeHandler {
 
     checkTabState(id) {
         const activeIframe = this.contentArea.querySelector(`iframe[data-tab-id="${id}"]`);
-        if (activeIframe && activeIframe.contentWindow) {
-            activeIframe.contentWindow.postMessage({ type: MessageTypes.CHECK_STATE }, '*');
+        const tab = this.currentTabs.find(t => t.id === id);
+        
+        if (activeIframe && activeIframe.contentWindow && tab && tab.url) {
+            try {
+                // Target the specific origin of the tab to prevent data leakage.
+                // If the iframe is currently on a different origin (e.g. loading, login, redirect),
+                // this will throw a DOMException, which we catch to prevent the extension from crashing.
+                const targetOrigin = new URL(tab.url).origin;
+                activeIframe.contentWindow.postMessage({ type: MessageTypes.CHECK_STATE }, targetOrigin);
+            } catch (error) {
+                // This is expected during page loads or redirects (e.g. to accounts.google.com)
+                // console.debug('Skipping state check due to origin mismatch:', error);
+            }
         }
     }
 }

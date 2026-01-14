@@ -43,6 +43,12 @@ chrome.runtime.onInstalled.addListener(async function () {
                 resourceTypes: [
                     "main_frame",
                     "sub_frame"
+                ],
+                requestDomains: [
+                    "gemini.google.com",
+                    "accounts.google.com",
+                    "consent.google.com",
+                    "labs.google.com"
                 ]
             }
         }]

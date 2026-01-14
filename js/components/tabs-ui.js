@@ -1,5 +1,5 @@
-import { CSSClasses, DOMIds, Timeouts } from './constants.js';
-import { Icons } from './icons.js';
+import { CSSClasses, DOMIds, Timeouts } from '../core/config.js';
+import { Icons } from '../core/icons.js';
 
 export class TabBar extends EventTarget {
     constructor() {
@@ -104,5 +104,19 @@ export class TabBar extends EventTarget {
             el.remove();
             this.exitingTabs.delete(id);
         }, Timeouts.ANIMATION_DURATION);
+    }
+
+    renderUI(container) {
+        container.insertAdjacentHTML('beforeend', this.getTemplate());
+    }
+
+    getTemplate() {
+        return `
+            <div class="tab-bar" id="tabBar">
+              <button class="add-tab-btn" id="addTabBtn" title="New Tab">+</button>
+              <button class="toggle-bookmark-btn" id="toggleBookmarkBtn" title="Toggle Bookmark"></button>
+              <button class="open-browser-btn" id="openBrowserBtn" title="Open in Browser">${Icons.OPEN_NEW}</button>
+            </div>
+        `;
     }
 }
