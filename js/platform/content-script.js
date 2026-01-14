@@ -67,6 +67,8 @@
 
         // Listen for requests from the main extension
         window.addEventListener('message', (event) => {
+            if (event.origin !== EXTENSION_ORIGIN) return;
+
             if (event.data && event.data.type === 'CHECK_STATE') {
                 // Force report by invalidating cache
                 lastUrl = null; 
