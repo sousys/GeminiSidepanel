@@ -108,14 +108,12 @@ export class IframeHandler {
         
         if (activeIframe && activeIframe.contentWindow && tab && tab.url) {
             try {
-                // Target the specific origin of the tab to prevent data leakage.
-                // If the iframe is currently on a different origin (e.g. loading, login, redirect),
-                // this will throw a DOMException, which we catch to prevent the extension from crashing.
-                const targetOrigin = new URL(tab.url).origin;
-                activeIframe.contentWindow.postMessage({ type: MessageTypes.CHECK_STATE }, targetOrigin);
+                // We use '*' because this is a simple state check with no sensitive data.
+                // This prevents "Failed to execute 'postMessage' ... target origin provided ... does not match"
+                // errors when the iframe is still loading or on about:blank.
+                activeIframe.contentWindow.postMessage({ type: MessageTypes.CHECK_STATE }, '*');
             } catch (error) {
-                // This is expected during page loads or redirects (e.g. to accounts.google.com)
-                // console.debug('Skipping state check due to origin mismatch:', error);
+                // console.debug('State check failed:', error);
             }
         }
     }

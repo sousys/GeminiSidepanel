@@ -2,7 +2,8 @@ export const StorageKeys = {
     TABS: 'gemini_tabs',
     ACTIVE_TAB: 'gemini_active_tab',
     PERSISTENCE_PREF: 'persistence_enabled',
-    BOOKMARKS: 'gemini_bookmarks'
+    BOOKMARKS: 'gemini_bookmarks',
+    RESET_BROKEN_ON_START: 'reset_broken_on_start'
 };
 
 export const MessageTypes = {

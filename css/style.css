@@ -742,3 +742,14 @@ input[type="checkbox"]:checked::after {
     color: var(--accent-color);
     font-weight: 600;
 }
+
+/* Broken Bookmark Styles */
+.bookmark-item.broken .bookmark-title {
+    color: #ff6b6b;
+    text-decoration: line-through;
+    opacity: 0.8;
+}
+
+.bookmark-item.broken:hover .bookmark-title {
+    opacity: 1;
+}

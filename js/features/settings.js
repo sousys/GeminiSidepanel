@@ -1,4 +1,4 @@
-import { DOMIds } from '../core/config.js';
+import { DOMIds, StorageKeys } from '../core/config.js';
 
 export class SettingsManager {
     constructor() {
@@ -7,6 +7,7 @@ export class SettingsManager {
         this.zoomSlider = null;
         this.zoomValue = null;
         this.persistenceCheckbox = null;
+        this.resetBrokenCheckbox = null;
         this.closeBtn = null;
         this.modal = null;
     }
@@ -17,6 +18,7 @@ export class SettingsManager {
         this.zoomSlider = document.getElementById('zoomSlider');
         this.zoomValue = document.getElementById('zoomValue');
         this.persistenceCheckbox = document.getElementById('persistenceCheckbox');
+        this.resetBrokenCheckbox = document.getElementById('resetBrokenCheckbox');
         this.closeBtn = document.getElementById('closeSettingsBtn');
         this.modal = document.getElementById('settingsModal');
 
@@ -26,7 +28,12 @@ export class SettingsManager {
 
     async loadSettings() {
         try {
-            const data = await chrome.storage.sync.get(['theme_preference', 'panel_zoom', 'persistence_enabled']);
+            const data = await chrome.storage.sync.get([
+                'theme_preference', 
+                'panel_zoom', 
+                StorageKeys.PERSISTENCE_PREF,
+                StorageKeys.RESET_BROKEN_ON_START
+            ]);
             
             const currentTheme = data.theme_preference || 'system';
             if (this.themeRadios) {
@@ -50,7 +57,12 @@ export class SettingsManager {
             // --- Persistence Logic ---
             if (this.persistenceCheckbox) {
                 // Default to true if undefined
-                this.persistenceCheckbox.checked = data.persistence_enabled !== false;
+                this.persistenceCheckbox.checked = data[StorageKeys.PERSISTENCE_PREF] !== false;
+            }
+
+            // --- Reset Broken Logic ---
+            if (this.resetBrokenCheckbox) {
+                this.resetBrokenCheckbox.checked = !!data[StorageKeys.RESET_BROKEN_ON_START];
             }
         } catch (error) {
             console.error('Failed to load settings:', error);
@@ -99,11 +111,24 @@ export class SettingsManager {
             this.persistenceCheckbox.addEventListener('change', async () => {
                 const enabled = this.persistenceCheckbox.checked;
                 try {
-                    await chrome.storage.sync.set({ 'persistence_enabled': enabled });
+                    await chrome.storage.sync.set({ [StorageKeys.PERSISTENCE_PREF]: enabled });
                     this.showStatus('Persistence setting saved!');
                 } catch (error) {
                     console.error('Failed to save persistence:', error);
                     this.showStatus('Failed to save persistence');
+                }
+            });
+        }
+
+        if (this.resetBrokenCheckbox) {
+            this.resetBrokenCheckbox.addEventListener('change', async () => {
+                const enabled = this.resetBrokenCheckbox.checked;
+                try {
+                    await chrome.storage.sync.set({ [StorageKeys.RESET_BROKEN_ON_START]: enabled });
+                    this.showStatus('Setting saved!');
+                } catch (error) {
+                    console.error('Failed to save reset broken setting:', error);
+                    this.showStatus('Failed to save setting');
                 }
             });
         }
@@ -199,6 +224,10 @@ export class SettingsManager {
                             <label>
                                 <input type="checkbox" id="persistenceCheckbox">
                                 Persist tabs/state
+                            </label>
+                            <label>
+                                <input type="checkbox" id="resetBrokenCheckbox">
+                                Reset 'Broken' bookmarks on startup
                             </label>
                         </div>
                         

@@ -60,4 +60,30 @@ export class BookmarksManager extends EventTarget {
             await this.save();
         }
     }
+
+    async markBroken(url, isBroken) {
+        const index = this.bookmarks.findIndex(b => b.url === url);
+        if (index !== -1) {
+            // Only save if the state actually changes
+            if (!!this.bookmarks[index].broken !== isBroken) {
+                this.bookmarks[index].broken = isBroken;
+                await this.save();
+            }
+        }
+    }
+
+    async clearBrokenFlags() {
+        let changed = false;
+        this.bookmarks = this.bookmarks.map(b => {
+            if (b.broken) {
+                changed = true;
+                return { ...b, broken: false };
+            }
+            return b;
+        });
+
+        if (changed) {
+            await this.save();
+        }
+    }
 }

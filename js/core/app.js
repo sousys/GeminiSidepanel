@@ -6,6 +6,9 @@ import { ZoomManager } from '../features/zoom.js';
 import { Icons } from './icons.js';
 import { BookmarksManager } from '../features/bookmarks.js';
 import { SettingsManager } from '../features/settings.js';
+import { LinkValidator } from '../features/link-validator.js';
+
+import { StorageKeys } from './config.js';
 
 class App {
     constructor() {
@@ -47,6 +50,12 @@ class App {
         // Initialize State & Bookmarks
         await this.state.init();
         await this.bookmarks.init();
+        
+        // Check reset broken flags setting
+        const settingsData = await chrome.storage.sync.get([StorageKeys.RESET_BROKEN_ON_START]);
+        if (settingsData[StorageKeys.RESET_BROKEN_ON_START]) {
+            await this.bookmarks.clearBrokenFlags();
+        }
         
         // Ensure at least one tab exists
         if (this.state.getTabs().length === 0) {
@@ -172,14 +181,28 @@ class App {
             if (event.origin !== Origins.GEMINI) return;
 
             if (event.data && event.data.type === MessageTypes.GEMINI_STATE_CHANGED) {
-                let tabId = event.data.tabId;
+                const { tabId, url, title, isAutoRedirect } = event.data;
 
                 if (tabId) {
-                    this.state.updateTabUrl(tabId, event.data.url);
+                    // Logic for Broken Bookmark Detection
+                    const existingTab = this.state.getTabs().find(t => t.id === tabId);
+                    
+                    if (existingTab && LinkValidator.isBrokenLink({ 
+                        isAutoRedirect, 
+                        intendedUrl: existingTab.url, 
+                        currentUrl: url 
+                    })) {
+                        // Mark bookmark as broken
+                        this.bookmarks.markBroken(existingTab.url, true);
+                        
+                        return; // Do NOT update the URL in the store
+                    }
+
+                    this.state.updateTabUrl(tabId, url);
                     
                     // Pass raw title to State if valid
-                    if (event.data.title) {
-                        this.state.updateTabTitle(tabId, event.data.title);
+                    if (title) {
+                        this.state.updateTabTitle(tabId, title);
                     }
                 }
             }
