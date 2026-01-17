@@ -27,8 +27,9 @@
     
     const initialTabId = window.name;
     
-    let lastUrl = location.href;
+    let lastUrl = null;
     let lastTitle = null;
+    let hasUserInteracted = false;
 
     // ==========================================
     // 3. OBSERVER SETUP
@@ -47,7 +48,19 @@
     // ------------------------------------------------------------------------
 
     function init() {
+        if (!initialTabId) return; // Ignore frames without an ID (likely internal frames like bscframe)
+
+        // Track user interactions to distinguish manual navigation from auto-redirects
+        ['mousedown', 'keydown', 'touchstart', 'pointerdown'].forEach(event => {
+            window.addEventListener(event, () => {
+                hasUserInteracted = true;
+            }, { capture: true, passive: true });
+        });
+
         reportState();
+
+        // Safety check for client-side redirects that happen shortly after load
+        setTimeout(reportState, 1000);
 
         // Try to attach observer (with retry if Angular hasn't loaded sidebar yet)
         if (!startObserving()) {
@@ -84,6 +97,7 @@
         // Check if we are on the "New Chat" page based on URL
         const urlObj = new URL(currentUrl);
         const isNewChat = CONFIG.ROUTES.NEW_CHAT.includes(urlObj.pathname);
+        const isAutoRedirect = isNewChat && !hasUserInteracted;
 
         if (isNewChat) {
             currentTitle = 'New';
@@ -112,12 +126,18 @@
             // We use try-catch to safely handle cases where we are NOT in the side panel
             // (e.g. regular tab), which prevents console errors.
             try {
-                if (window.parent !== window) {
+                // Check if we are embedded in the extension (Side Panel)
+                const isEmbeddedInExtension = window.location.ancestorOrigins && 
+                                            window.location.ancestorOrigins.length > 0 && 
+                                            window.location.ancestorOrigins[0] === EXTENSION_ORIGIN;
+
+                if (window.parent !== window && isEmbeddedInExtension) {
                     window.parent.postMessage({ 
                         type: 'GEMINI_STATE_CHANGED', 
                         url: currentUrl,
                         title: currentTitle,
-                        tabId: initialTabId
+                        tabId: initialTabId,
+                        isAutoRedirect: isAutoRedirect
                     }, EXTENSION_ORIGIN);
                 }
             } catch (err) {

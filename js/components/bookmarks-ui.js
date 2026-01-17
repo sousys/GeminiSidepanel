@@ -124,6 +124,9 @@ export class BookmarksUI extends EventTarget {
         bookmarks.forEach(bookmark => {
             const itemEl = document.createElement('div');
             itemEl.className = 'bookmark-item';
+            if (bookmark.broken) {
+                itemEl.classList.add('broken');
+            }
 
             const titleEl = document.createElement('span');
             titleEl.className = 'bookmark-title';
