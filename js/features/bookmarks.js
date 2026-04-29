@@ -7,8 +7,27 @@ export class BookmarksManager extends EventTarget {
     }
 
     async init() {
-        const data = await chrome.storage.local.get([StorageKeys.BOOKMARKS]);
-        this.bookmarks = data[StorageKeys.BOOKMARKS] || [];
+        let data;
+        try {
+            data = await chrome.storage.local.get([StorageKeys.BOOKMARKS]);
+        } catch (error) {
+            console.error('Failed to load bookmarks from storage, starting empty:', error);
+            this.bookmarks = [];
+            this.notify();
+            return;
+        }
+
+        const raw = Array.isArray(data[StorageKeys.BOOKMARKS]) ? data[StorageKeys.BOOKMARKS] : [];
+        const valid = raw.filter(b =>
+            b && typeof b === 'object' &&
+            typeof b.url === 'string' && b.url.length > 0 &&
+            typeof b.title === 'string'
+        );
+        const discarded = raw.length - valid.length;
+        if (discarded > 0) {
+            console.warn(`BookmarksManager: discarded ${discarded} malformed bookmark entries from storage.`);
+        }
+        this.bookmarks = valid;
         this.notify();
     }
 
@@ -17,9 +36,13 @@ export class BookmarksManager extends EventTarget {
     }
 
     async save() {
-        await chrome.storage.local.set({
-            [StorageKeys.BOOKMARKS]: this.bookmarks
-        });
+        try {
+            await chrome.storage.local.set({
+                [StorageKeys.BOOKMARKS]: this.bookmarks
+            });
+        } catch (error) {
+            console.error('Failed to save bookmarks:', error);
+        }
         this.notify();
     }
 
@@ -34,7 +57,8 @@ export class BookmarksManager extends EventTarget {
     async add(title, url) {
         if (this.isBookmarked(url)) return;
 
-        this.bookmarks.push({ title, url, addedAt: Date.now() });
+        // Immutable add to keep with the rest of the codebase's pattern.
+        this.bookmarks = [...this.bookmarks, { title, url, addedAt: Date.now() }];
         await this.save();
     }
 
@@ -54,22 +78,27 @@ export class BookmarksManager extends EventTarget {
     }
 
     async update(url, newTitle) {
-        const index = this.bookmarks.findIndex(b => b.url === url);
-        if (index !== -1) {
-            this.bookmarks[index].title = newTitle;
-            await this.save();
-        }
+        let changed = false;
+        this.bookmarks = this.bookmarks.map(b => {
+            if (b.url === url && b.title !== newTitle) {
+                changed = true;
+                return { ...b, title: newTitle };
+            }
+            return b;
+        });
+        if (changed) await this.save();
     }
 
     async markBroken(url, isBroken) {
-        const index = this.bookmarks.findIndex(b => b.url === url);
-        if (index !== -1) {
-            // Only save if the state actually changes
-            if (!!this.bookmarks[index].broken !== isBroken) {
-                this.bookmarks[index].broken = isBroken;
-                await this.save();
+        let changed = false;
+        this.bookmarks = this.bookmarks.map(b => {
+            if (b.url === url && !!b.broken !== isBroken) {
+                changed = true;
+                return { ...b, broken: isBroken };
             }
-        }
+            return b;
+        });
+        if (changed) await this.save();
     }
 
     async clearBrokenFlags() {

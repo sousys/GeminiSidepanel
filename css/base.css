@@ -1,0 +1,138 @@
+﻿/* base.css — Theme variables, resets, layout containers, side toolbar.
+ * Loaded first. Defines all CSS custom properties consumed by components.css and modals.css.
+ */
+
+:root {
+  --bg-color: #131314;
+  --tab-bar-bg: #1e1f20;
+  --tab-inactive-bg: transparent;
+  --tab-hover-bg: #2b2c2d;
+  --tab-active-bg: #131314; /* Matches content bg for seamless look */
+  --text-primary: #e3e3e3;
+  --text-secondary: #c4c7c5;
+  --border-color: #444746;
+  --accent-color: #a8c7fa;
+  --modal-overlay-bg: rgba(0, 0, 0, 0.5);
+  --modal-bg: #1e1f20;
+  --surface-color: #1e1f20; /* Added from settings */
+  --hover-color: #2b2c2d; /* Added from settings */
+  --action-hover-bg: rgba(255, 255, 255, 0.1);
+  /*
+    Material 3 tonal error pattern: a light-toned error red works as both a
+    foreground text color on the dark page bg AND as a button background
+    when paired with dark on-error text. White-on-light-red would fail WCAG
+    contrast.
+  */
+  --error-color: #f28b82;
+  --on-error-color: #131314;
+
+  --spacing-sm: 4px; /* Added from settings */
+  --spacing-md: 8px; /* Added from settings */
+  --spacing-lg: 16px; /* Added from settings */
+  --radius-sm: 6px; /* Added from settings */
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body.light-theme {
+  --bg-color: #ffffff;
+  --tab-bar-bg: #f0f4f9;
+  --tab-inactive-bg: transparent;
+  --tab-hover-bg: #dee3ea;
+  --tab-active-bg: #ffffff;
+  --text-primary: #1e1f20;
+  --text-secondary: #444746;
+  --border-color: #dde3ea;
+  --accent-color: #0b57d0;
+  --modal-overlay-bg: rgba(255, 255, 255, 0.6);
+  --modal-bg: #f0f4f9;
+  --surface-color: #f0f4f9; /* Added from settings */
+  --hover-color: #dee3ea; /* Added from settings */
+  --action-hover-bg: rgba(0, 0, 0, 0.06);
+  --error-color: #b3261e;
+  --on-error-color: #ffffff;
+}
+
+/*
+  Smooth theme transitions are enabled by JS adding `.theme-ready` after the
+  initial paint. Without this guard, the panel would visibly animate from the
+  default theme to the user's preferred theme on every open.
+
+  Scoped to specific themed surfaces — NOT a universal `body.theme-ready *`
+  rule. The universal selector has specificity (0,1,1) which beats `.tab`
+  (0,1,0); because `transition` is a single shorthand (not additive), the
+  universal rule would replace `.tab`'s existing `transition: ..., flex-grow`
+  declaration and break the tab-width re-flow animation on switch.
+
+  Elements with their own `transition` declaration (.tab, .add-tab-btn,
+  .toolbar-btn, .bookmark-item, etc.) already animate background/color and
+  are intentionally omitted here.
+*/
+body.theme-ready,
+body.theme-ready .tab-bar,
+body.theme-ready #side-toolbar,
+body.theme-ready .modal-content,
+body.theme-ready .modal-header,
+body.theme-ready .edit-dialog-content,
+body.theme-ready .edit-form-input {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+body {
+  display: flex;
+  flex-direction: column; /* Back to column so tab bar stacks on top */
+  height: 100vh;
+  margin: 0;
+  overflow: hidden;
+  padding: 0;
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  font-size: 14px; /* Default font size */
+}
+
+#app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+}
+
+#browser-container {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Wrapper for Content + Sidebar (Side-by-Side) */
+#content-wrapper {
+  display: flex;
+  flex-direction: row;
+  flex-grow: 1;
+  height: 100%; /* Take remaining height */
+  overflow: hidden;
+}
+
+#side-toolbar {
+  width: 1.5rem; /* Approx half of tab bar height */
+  background: var(--tab-bar-bg);
+  border-left: 0.0625rem solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 0.25rem;
+  padding-bottom: 1.25rem; /* Add padding at bottom */
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+/* Push items starting from coffeeBtn to the bottom */
+#coffeeBtn {
+    margin-top: auto;
+}
+

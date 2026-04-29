@@ -3,6 +3,7 @@ import { TabBar } from './tabs-ui.js';
 import { IframeHandler } from './web-views.js';
 import { Icons } from '../core/icons.js';
 import { BookmarksUI } from './bookmarks-ui.js';
+import { ReleaseNotesUI } from './release-notes-ui.js';
 
 export class ViewRenderer extends EventTarget {
     constructor() {
@@ -10,6 +11,7 @@ export class ViewRenderer extends EventTarget {
         this.tabBar = new TabBar();
         this.iframeHandler = new IframeHandler();
         this.bookmarksUI = new BookmarksUI();
+        this.releaseNotesUI = new ReleaseNotesUI();
         
         // UI Elements
         this.bookmarkBtn = null;
@@ -23,6 +25,7 @@ export class ViewRenderer extends EventTarget {
         this.tabBar.init(tabBarEl);
         this.iframeHandler.init(contentAreaEl);
         this.bookmarksUI.init();
+        this.releaseNotesUI.init();
 
         // Forward events
         this.tabBar.addEventListener('tab-switch', (e) => {
@@ -62,6 +65,9 @@ export class ViewRenderer extends EventTarget {
                 if (modal && modal.classList.contains('open')) {
                     this.bookmarksUI.closeModal();
                 } else {
+                    // Close other modals (release notes; settings is closed by app.js)
+                    this.releaseNotesUI.closeModal();
+                    this.dispatchEvent(new CustomEvent('bookmarks-opening'));
                     this.bookmarksUI.openModal();
                 }
             });
@@ -78,6 +84,19 @@ export class ViewRenderer extends EventTarget {
 
     renderModals(container) {
         this.bookmarksUI.render(container);
+        this.releaseNotesUI.render(container);
+    }
+
+    openReleaseNotes() {
+        this.releaseNotesUI.openModal();
+    }
+
+    closeReleaseNotes() {
+        this.releaseNotesUI.closeModal();
+    }
+
+    isReleaseNotesOpen() {
+        return this.releaseNotesUI.isOpen();
     }
 
     render(tabs, activeTabId) {
@@ -114,9 +133,9 @@ export class ViewRenderer extends EventTarget {
             <div id="content-wrapper">
               <div id="content-area"></div>
               <div id="side-toolbar">
-                <button class="toolbar-btn" id="bookmarkBtn" title="Bookmarks"></button>
-                <button class="toolbar-btn" id="coffeeBtn" title="Buy me a coffee"></button>
-                <button class="toolbar-btn" id="settingsBtn" title="Settings"></button>
+                <button class="toolbar-btn" id="bookmarkBtn" title="Bookmarks" aria-label="Bookmarks"></button>
+                <button class="toolbar-btn" id="coffeeBtn" title="Buy me a coffee" aria-label="Buy me a coffee"></button>
+                <button class="toolbar-btn" id="settingsBtn" title="Settings" aria-label="Settings"></button>
               </div>
             </div>
         `;

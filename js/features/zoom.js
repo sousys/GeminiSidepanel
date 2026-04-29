@@ -1,7 +1,10 @@
+import { StorageKeys } from '../core/config.js';
+
 export class ZoomManager {
     constructor() {
-        this.STORAGE_KEY = 'panel_zoom';
         this.DEFAULT_ZOOM = 100;
+        this.MIN_ZOOM = 50;
+        this.MAX_ZOOM = 120;
     }
 
     async init() {
@@ -9,16 +12,16 @@ export class ZoomManager {
 
         // Listen for changes
         chrome.storage.onChanged.addListener((changes, namespace) => {
-            if (namespace === 'sync' && changes[this.STORAGE_KEY]) {
-                this.applyZoom(changes[this.STORAGE_KEY].newValue);
+            if (namespace === 'sync' && changes[StorageKeys.PANEL_ZOOM]) {
+                this.applyZoom(changes[StorageKeys.PANEL_ZOOM].newValue);
             }
         });
     }
 
     async loadZoomLevel() {
         try {
-            const data = await chrome.storage.sync.get(this.STORAGE_KEY);
-            const currentZoom = data[this.STORAGE_KEY] || this.DEFAULT_ZOOM;
+            const data = await chrome.storage.sync.get(StorageKeys.PANEL_ZOOM);
+            const currentZoom = data[StorageKeys.PANEL_ZOOM] || this.DEFAULT_ZOOM;
             this.applyZoom(currentZoom);
         } catch (error) {
             console.error('Failed to load zoom level:', error);
@@ -27,8 +30,10 @@ export class ZoomManager {
     }
 
     applyZoom(zoomPercent) {
-        if (!zoomPercent) return;
-        const zoomLevel = parseInt(zoomPercent, 10) / 100;
+        // Clamp against corrupt, NaN, or out-of-range values from storage.
+        const parsed = parseInt(zoomPercent, 10) || this.DEFAULT_ZOOM;
+        const clamped = Math.max(this.MIN_ZOOM, Math.min(this.MAX_ZOOM, parsed));
+        const zoomLevel = clamped / 100;
         document.body.style.zoom = zoomLevel;
         document.body.style.height = (100 / zoomLevel) + 'vh';
     }

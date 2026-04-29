@@ -144,14 +144,20 @@ class App {
         const openBrowserBtn = document.getElementById(DOMIds.OPEN_BROWSER_BTN);
         if (openBrowserBtn) {
             openBrowserBtn.innerHTML = Icons.OPEN_NEW;
-            openBrowserBtn.addEventListener('click', () => {
+            openBrowserBtn.addEventListener('click', async () => {
                 const activeTab = this.state.getActiveTab();
-                if (activeTab && activeTab.url) {
-                    chrome.tabs.create({ url: activeTab.url });
+                if (!activeTab || !activeTab.url) return;
+
+                // Only remove the side-panel tab if the browser tab actually opens.
+                // Otherwise the user loses their conversation reference with no recovery.
+                try {
+                    await chrome.tabs.create({ url: activeTab.url });
                     this.state.removeTab(activeTab.id);
                     if (this.state.getTabs().length === 0) {
                         this.state.addTab();
                     }
+                } catch (error) {
+                    console.error('Failed to open tab in browser:', error);
                 }
             });
         }
@@ -163,12 +169,24 @@ class App {
                 if (this.settings.isOpen()) {
                     this.settings.closeModal();
                 } else {
-                    // Close bookmarks if open
+                    // Close other modals if open
                     this.view.closeBookmarksModal();
+                    this.view.closeReleaseNotes();
                     this.settings.openModal();
                 }
             });
         }
+
+        // Open Release Notes from inside Settings
+        this.settings.addEventListener('release-notes-open', () => {
+            this.settings.closeModal();
+            this.view.openReleaseNotes();
+        });
+
+        // Bookmarks opening should also dismiss Settings (full mutual exclusion).
+        this.view.addEventListener('bookmarks-opening', () => {
+            this.settings.closeModal();
+        });
 
         const coffeeBtn = document.getElementById('coffeeBtn');
         if (coffeeBtn) {

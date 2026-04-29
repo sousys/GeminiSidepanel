@@ -1,342 +1,6 @@
-:root {
-  --bg-color: #131314;
-  --tab-bar-bg: #1e1f20;
-  --tab-inactive-bg: transparent;
-  --tab-hover-bg: #2b2c2d;
-  --tab-active-bg: #131314; /* Matches content bg for seamless look */
-  --text-primary: #e3e3e3;
-  --text-secondary: #c4c7c5;
-  --border-color: #444746;
-  --accent-color: #a8c7fa;
-  --modal-overlay-bg: rgba(0, 0, 0, 0.5);
-  --modal-bg: #1e1f20;
-  --surface-color: #1e1f20; /* Added from settings */
-  --hover-color: #2b2c2d; /* Added from settings */
-  
-  --spacing-sm: 4px; /* Added from settings */
-  --spacing-md: 8px; /* Added from settings */
-  --spacing-lg: 16px; /* Added from settings */
-  --radius-sm: 6px; /* Added from settings */
-}
-
-*, *::before, *::after {
-  box-sizing: border-box;
-}
-
-body.light-theme {
-  --bg-color: #ffffff;
-  --tab-bar-bg: #f0f4f9;
-  --tab-inactive-bg: transparent;
-  --tab-hover-bg: #dee3ea;
-  --tab-active-bg: #ffffff;
-  --text-primary: #1e1f20;
-  --text-secondary: #444746;
-  --border-color: #dde3ea;
-  --accent-color: #0b57d0;
-  --modal-overlay-bg: rgba(255, 255, 255, 0.6);
-  --modal-bg: #f0f4f9;
-  --surface-color: #f0f4f9; /* Added from settings */
-  --hover-color: #dee3ea; /* Added from settings */
-}
-
-body {
-  display: flex;
-  flex-direction: column; /* Back to column so tab bar stacks on top */
-  height: 100vh;
-  margin: 0;
-  overflow: hidden;
-  padding: 0;
-  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  background-color: var(--bg-color);
-  color: var(--text-primary);
-  font-size: 14px; /* Default font size */
-}
-
-#app-container {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    width: 100%;
-    overflow: hidden;
-}
-
-#browser-container {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    overflow: hidden;
-}
-
-/* Wrapper for Content + Sidebar (Side-by-Side) */
-#content-wrapper {
-  display: flex;
-  flex-direction: row;
-  flex-grow: 1;
-  height: 100%; /* Take remaining height */
-  overflow: hidden;
-}
-
-#side-toolbar {
-  width: 1.5rem; /* Approx half of tab bar height */
-  background: var(--tab-bar-bg);
-  border-left: 0.0625rem solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding-top: 0.25rem;
-  padding-bottom: 1.25rem; /* Add padding at bottom */
-  gap: 0.25rem;
-  flex-shrink: 0;
-}
-
-/* Push items starting from coffeeBtn to the bottom */
-#coffeeBtn {
-    margin-top: auto;
-}
-
-.tab-bar {
-  display: flex;
-  background: var(--tab-bar-bg);
-  border-bottom: 0.0625rem solid var(--border-color);
-  overflow-x: auto; /* Enable scrolling */
-  flex-shrink: 0;
-  align-items: center;
-  height: 2.25rem;
-  padding: 0.25rem 0.25rem 0 0.25rem;
-  gap: 0.125rem;
-  scrollbar-width: none;
-  width: 100%; /* Ensure full width */
-}
-
-.tab-bar::-webkit-scrollbar {
-  display: none;
-}
-
-.tab {
-  padding: 0 0.625rem;
-  height: 100%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  background: var(--tab-inactive-bg);
-  user-select: none;
-  font-size: 0.6875rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  
-  /* Flex behavior for fluid width */
-  flex: 1 1 auto;
-  min-width: 4rem; /* Ensure "New" is visible */
-  
-  border-radius: 0.5rem 0.5rem 0 0;
-  transition: background-color 0.2s, color 0.2s, flex-grow 0.2s; /* Added flex transition */
-  position: relative;
-}
-
-.tab:hover {
-  background: var(--tab-hover-bg);
-  color: var(--text-primary);
-}
-
-.tab.active {
-  background: var(--tab-active-bg);
-  color: var(--text-primary);
-  font-weight: 600;
-  box-shadow: inset 0 0.125rem 0 0 var(--accent-color); 
-}
-
-/* Separator line between inactive tabs */
-.tab:not(.active):not(:hover)::after {
-  content: "";
-  position: absolute;
-  right: 0;
-  height: 1rem;
-  width: 0.0625rem;
-  background-color: var(--border-color);
-}
-.tab:last-of-type::after {
-  display: none;
-}
-
-.tab-title {
-  flex-grow: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-right: 0.375rem;
-}
-
-.close-tab {
-  border-radius: 0.25rem;
-  width: 1rem;
-  height: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-  font-weight: 700;
-  line-height: 1;
-  opacity: 0;
-  transition: opacity 0.2s, background-color 0.2s, color 0.2s;
-  color: var(--text-secondary);
-  flex-shrink: 0; /* Prevent close button from shrinking */
-}
-
-.tab:hover .close-tab,
-.tab.active .close-tab {
-  opacity: 1;
-}
-
-.close-tab:hover {
-  background: #5f6368;
-  color: #fff;
-}
-
-.add-tab-btn,
-.open-browser-btn,
-.toggle-bookmark-btn {
-  width: 2rem;
-  height: 1.75rem;
-  cursor: pointer;
-  background: transparent;
-  border: none;
-  border-radius: 0.25rem;
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s, color 0.2s;
-  flex-shrink: 0;
-}
-
-.toolbar-btn {
-  width: 100%; /* Fill the sidebar width */
-  height: 1.5rem; /* Aspect ratio roughly square */
-  cursor: pointer;
-  background: transparent;
-  border: none;
-  border-radius: 0; /* Flat look or small radius */
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s, color 0.2s;
-  padding: 2px; /* Small padding */
-}
-.toolbar-btn svg {
-  width: 18px;
-  height: 18px;
-}
-
-.add-tab-btn:hover,
-.open-browser-btn:hover,
-.toggle-bookmark-btn:hover,
-.toolbar-btn:hover {
-  background: var(--tab-hover-bg);
-  color: var(--text-primary);
-}
-
-.add-tab-btn {
-  margin-left: 0.125rem;
-  font-size: 1.25rem;
-}
-
-.open-browser-btn {
-  margin-left: auto;
-  margin-right: 0.125rem;
-  font-size: 0.875rem;
-}
-
-.toggle-bookmark-btn svg,
-.open-browser-btn svg {
-  width: 16px;
-  height: 16px;
-}
-
-.toggle-bookmark-btn.bookmarked {
-    color: var(--accent-color);
-}
-
-#content-area {
-  flex-grow: 1;
-  position: relative;
-  background: var(--bg-color);
-  overflow: hidden;
-}
-
-iframe {
-  width: 100%;
-  height: 100%;
-  border: 0;
-  display: none;
-  background: var(--bg-color); 
-}
-
-iframe.active {
-  display: block;
-}
-
-.credits {
-  flex-shrink: 0;
-  background: var(--tab-bar-bg);
-  border-top: 0.0625rem solid var(--border-color);
-  text-align: center;
-  padding: 0.25rem;
-  font-size: 0.6875rem;
-  color: var(--text-secondary);
-}
-
-.credits a {
-    color: var(--text-secondary);
-    text-decoration: none;
-}
-.credits a:hover {
-    color: var(--text-primary);
-    text-decoration: underline;
-}
-
-/* Animations */
-@keyframes slideInFromLeft {
-  0% {
-    opacity: 0;
-    transform: translateX(-1.25rem);
-    max-width: 0;
-    padding: 0;
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(0);
-    max-width: 20rem;
-    padding: 0 0.625rem;
-  }
-}
-
-@keyframes slideOutToLeft {
-  0% {
-    opacity: 1;
-    transform: translateX(0);
-    max-width: 20rem;
-    padding: 0 0.625rem;
-    margin-right: 0;
-  }
-  100% {
-    opacity: 0;
-    transform: translateX(-1.25rem);
-    max-width: 0;
-    padding: 0;
-    border: 0;
-  }
-}
-
-.tab.slide-in {
-  animation: slideInFromLeft 0.375s ease-out forwards;
-}
-
-.tab.slide-out {
-  animation: slideOutToLeft 0.375s ease-in forwards;
-  pointer-events: none; /* Prevent clicks while closing */
-}
+﻿/* modals.css — Bookmarks/Settings/Release-Notes modals, edit/delete dialogs, settings form controls.
+ * Loaded last. Depends on variables (base.css). No selector conflicts with components.css.
+ */
 
 /* Modal */
 .modal-overlay {
@@ -362,7 +26,7 @@ iframe.active {
     background: var(--modal-bg);
     border-left: 1px solid var(--border-color);
     border-radius: 0;
-    width: 50vw; /* Half the width of the viewport */
+    width: clamp(200px, 50vw, 400px);
     height: 100%;
     max-height: none; /* Override previous max-height */
     display: flex;
@@ -445,13 +109,13 @@ iframe.active {
 }
 
 .bookmark-action-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--action-hover-bg);
     color: var(--text-primary);
 }
 
 .bookmark-delete-btn:hover {
     background: rgba(255, 0, 0, 0.1);
-    color: #ff6b6b;
+    color: var(--error-color);
 }
 
 .empty-state {
@@ -561,8 +225,24 @@ iframe.active {
     color: var(--bg-color); /* Contrast text */
 }
 
-.btn-primary:hover {
+.btn-danger {
+    background: var(--error-color);
+    color: var(--on-error-color);
+}
+
+/* Shared hover for filled action buttons (Phase 2.1 dedup). */
+.btn-primary:hover,
+.btn-danger:hover {
     opacity: 0.9;
+}
+
+/* Delete confirmation dialog overrides (replaces former inline styles). */
+#deleteConfirmDialog .delete-confirm-content {
+    width: 250px;
+}
+
+#deleteConfirmDialog .delete-confirm-message {
+    margin-bottom: 8px;
 }
 
 /* --- Settings Styles --- */
@@ -738,14 +418,109 @@ input[type="checkbox"]:checked::after {
     opacity: 1;
 }
 
+/* --- About & Release Notes --- */
+
+.settings-about {
+    margin-bottom: var(--spacing-lg);
+}
+
+.about-header {
+    display: flex;
+    align-items: baseline;
+    gap: var(--spacing-md);
+}
+
+.about-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.about-version {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--accent-color);
+    background: var(--action-hover-bg);
+    padding: 1px 6px;
+    border-radius: 4px;
+}
+
+.release-notes {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.release-entry {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.release-version {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--accent-color);
+}
+
+.release-list {
+    margin: 0;
+    padding-left: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.release-list li {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
 #zoomValue {
     color: var(--accent-color);
     font-weight: 600;
 }
 
+/* Settings link button — opens a sub-modal (e.g. Release Notes). */
+.settings-link-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-top: 1px solid var(--border-color);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    font-family: inherit;
+    text-align: left;
+    padding: 12px 0;
+    margin-top: var(--spacing-md);
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.settings-link-btn:hover {
+    background: var(--action-hover-bg);
+    color: var(--text-primary);
+}
+
+.settings-link-btn:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: -2px;
+}
+
+.settings-link-chevron {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    line-height: 1;
+    margin-left: 8px;
+}
+
 /* Broken Bookmark Styles */
 .bookmark-item.broken .bookmark-title {
-    color: #ff6b6b;
+    color: var(--error-color);
     text-decoration: line-through;
     opacity: 0.8;
 }

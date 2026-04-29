@@ -1,21 +1,23 @@
+import { StorageKeys } from '../core/config.js';
+
 export class ThemeManager {
     constructor() {
-        this.STORAGE_KEY = 'theme_preference';
         this.currentMode = 'system'; // 'system', 'light', 'dark'
         this.systemMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        this.themeReady = false;
     }
 
     async init() {
         // Load preference
-        const data = await chrome.storage.sync.get(this.STORAGE_KEY);
-        this.currentMode = data[this.STORAGE_KEY] || 'system';
+        const data = await chrome.storage.sync.get(StorageKeys.THEME_PREF);
+        this.currentMode = data[StorageKeys.THEME_PREF] || 'system';
         
         this.apply();
 
         // Listen for storage changes (e.g. changed in Settings page)
         chrome.storage.onChanged.addListener((changes, namespace) => {
-            if (namespace === 'sync' && changes[this.STORAGE_KEY]) {
-                this.currentMode = changes[this.STORAGE_KEY].newValue;
+            if (namespace === 'sync' && changes[StorageKeys.THEME_PREF]) {
+                this.currentMode = changes[StorageKeys.THEME_PREF].newValue;
                 this.apply();
             }
         });
@@ -42,11 +44,18 @@ export class ThemeManager {
             document.body.classList.remove('light-theme');
             document.body.classList.add('dark-theme');
         }
+
+        // Enable smooth transitions only AFTER the initial paint, so the user
+        // doesn't see the theme animate in from the default styles on load.
+        if (!this.themeReady) {
+            this.themeReady = true;
+            requestAnimationFrame(() => document.body.classList.add('theme-ready'));
+        }
     }
 
     async setTheme(mode) {
         this.currentMode = mode;
         this.apply();
-        await chrome.storage.sync.set({ [this.STORAGE_KEY]: mode });
+        await chrome.storage.sync.set({ [StorageKeys.THEME_PREF]: mode });
     }
 }

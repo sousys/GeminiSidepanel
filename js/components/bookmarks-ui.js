@@ -144,6 +144,7 @@ export class BookmarksUI extends EventTarget {
             editBtn.className = 'bookmark-action-btn';
             editBtn.innerHTML = Icons.EDIT;
             editBtn.title = 'Edit';
+            editBtn.setAttribute('aria-label', `Edit bookmark ${bookmark.title}`);
             editBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.openEditDialog(bookmark);
@@ -154,6 +155,7 @@ export class BookmarksUI extends EventTarget {
             deleteBtn.className = 'bookmark-action-btn bookmark-delete-btn';
             deleteBtn.innerHTML = Icons.DELETE;
             deleteBtn.title = 'Remove';
+            deleteBtn.setAttribute('aria-label', `Delete bookmark ${bookmark.title}`);
             
             deleteBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -247,12 +249,12 @@ export class BookmarksUI extends EventTarget {
             </div>
 
             <div id="${DOMIds.DELETE_CONFIRM_DIALOG}" class="edit-dialog-overlay">
-                <div class="edit-dialog-content" style="width: 250px;">
+                <div class="edit-dialog-content delete-confirm-content">
                     <div class="edit-dialog-header">Delete Bookmark?</div>
-                    <div class="edit-form-label" style="margin-bottom: 8px;">Are you sure you want to delete this bookmark?</div>
+                    <div class="edit-form-label delete-confirm-message">Are you sure you want to delete this bookmark?</div>
                     <div class="edit-dialog-actions">
                         <button id="${DOMIds.CANCEL_DELETE_BTN}" class="btn btn-secondary">Cancel</button>
-                        <button id="${DOMIds.CONFIRM_DELETE_BTN}" class="btn btn-primary" style="background: #ff6b6b; color: white;">Delete</button>
+                        <button id="${DOMIds.CONFIRM_DELETE_BTN}" class="btn btn-danger">Delete</button>
                     </div>
                 </div>
             </div>

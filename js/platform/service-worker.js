@@ -1,12 +1,13 @@
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
     .catch((error) => console.error(error));
 
-chrome.runtime.onInstalled.addListener(async function () {
-    const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
+chrome.runtime.onInstalled.addListener(function () {
     chrome.declarativeNetRequest.updateDynamicRules({
         removeRuleIds: [1],
         addRules: [{
-            // We are removing 'X-Frame-Options' and 'Content-Security-Policy' to allow Gemini to be embedded.
+            // Strip ONLY the headers that block iframe embedding of Gemini.
+            // X-Content-Type-Options must NOT be removed (MIME sniffing protection).
+            // CORS headers must NOT be modified (unnecessary for iframe embedding).
             id: 1,
             priority: 1,
             action: {
@@ -19,23 +20,6 @@ chrome.runtime.onInstalled.addListener(async function () {
                     {
                         header: "x-frame-options",
                         operation: "remove"
-                    },
-                    {
-                        header: "frame-options",
-                        operation: "remove"
-                    },
-                    {
-                        header: "frame-ancestors",
-                        operation: "remove"
-                    },
-                    {
-                        header: "X-Content-Type-Options",
-                        operation: "remove"
-                    },
-                    {
-                        header: "access-control-allow-origin",
-                        operation: "set",
-                        value: "*"
                     }
                 ]
             },
@@ -52,5 +36,5 @@ chrome.runtime.onInstalled.addListener(async function () {
                 ]
             }
         }]
-    });
+    }).catch(err => console.error('updateDynamicRules failed:', err));
 });
