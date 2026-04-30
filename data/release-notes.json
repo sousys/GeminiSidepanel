@@ -1,5 +1,11 @@
 [
     {
+        "version": "v0.4.3",
+        "items": [
+            "Code organization: settings styles moved to a separate stylesheet"
+        ]
+    },
+    {
         "version": "v0.4.2",
         "items": [
             "Fixed: release notes modal now scrolls when content exceeds the visible area"
