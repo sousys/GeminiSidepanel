@@ -119,7 +119,8 @@ export class IframeHandler {
 
     /**
      * Internal: posts a CHECK_STATE message to a single iframe if it is
-     * mounted, has a contentWindow, and points at a known provider URL.
+     * mounted, has a contentWindow, and is currently sitting on the provider
+     * origin (not still on about:blank during the load gap).
      */
     postCheckState(iframe, tab) {
         if (!iframe || !iframe.contentWindow || !tab || !tab.url) return;
@@ -127,13 +128,28 @@ export class IframeHandler {
         const provider = getProviderById(tab.provider);
         if (!provider) return; // Defensive: store should have rejected unknown providers.
 
+        // postMessage with a mismatched targetOrigin does NOT throw — it
+        // logs a console error and drops the message, so a try/catch around
+        // the postMessage call is not enough. Same-origin access to
+        // contentWindow.location.href succeeds; cross-origin access throws
+        // a SecurityError. Use that as the signal: only post when access
+        // throws (== iframe has navigated to the provider origin).
+        let isCrossOrigin = false;
+        try {
+            // Touching .href triggers the cross-origin check.
+            void iframe.contentWindow.location.href;
+        } catch (_) {
+            isCrossOrigin = true;
+        }
+        if (!isCrossOrigin) return; // Still on about:blank / extension origin.
+
         try {
             iframe.contentWindow.postMessage(
                 { type: MessageTypes.CHECK_STATE },
                 provider.origin
             );
         } catch (_) {
-            // Iframe may still be loading or on about:blank — safe to ignore.
+            // Iframe may still be loading — safe to ignore.
         }
     }
 
