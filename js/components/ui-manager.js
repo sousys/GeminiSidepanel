@@ -37,6 +37,14 @@ export class ViewRenderer extends EventTarget {
             this.dispatchEvent(new CustomEvent('tab-close', { detail: e.detail }));
         });
 
+        this.tabBar.addEventListener('new-tab', (e) => {
+            this.dispatchEvent(new CustomEvent('new-tab', { detail: e.detail }));
+        });
+
+        this.tabBar.addEventListener('tab-reorder', (e) => {
+            this.dispatchEvent(new CustomEvent('tab-reorder', { detail: e.detail }));
+        });
+
         // Forward BookmarksUI events
         this.bookmarksUI.addEventListener('modal-open', () => {
             this.dispatchEvent(new CustomEvent('bookmarks-modal-open'));
@@ -102,6 +110,10 @@ export class ViewRenderer extends EventTarget {
     render(tabs, activeTabId) {
         this.tabBar.render(tabs, activeTabId);
         this.iframeHandler.render(tabs, activeTabId);
+    }
+
+    setEnabledProviders(providers) {
+        this.tabBar.setEnabledProviders(providers);
     }
 
     updateBookmarkButton(isBookmarked) {

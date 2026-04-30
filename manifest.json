@@ -8,11 +8,12 @@
       }
    },
    "background": {
-      "service_worker": "js/platform/service-worker.js"
+      "service_worker": "js/platform/service-worker.js",
+      "type": "module"
    },
    "commands": {
       "_execute_action": {
-         "description": "Gemini Sidepanel Extended",
+         "description": "AI MultiTab Sidepanel",
          "suggested_key": {
             "default": "Alt+G"
          }
@@ -21,16 +22,36 @@
    "content_scripts": [
       {
          "matches": [ "https://gemini.google.com/*" ],
-         "js": [ "js/platform/content-script.js" ],
+         "js": [
+            "js/providers/content-script-common.js",
+            "js/providers/gemini/content-script.js"
+         ],
+         "all_frames": true,
+         "run_at": "document_start"
+      },
+      {
+         "matches": [ "https://chatgpt.com/*" ],
+         "js": [
+            "js/providers/content-script-common.js",
+            "js/providers/chatgpt/content-script.js"
+         ],
          "all_frames": true,
          "run_at": "document_start"
       }
    ],
    "content_security_policy": {
-      "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline'; frame-src 'self' https://gemini.google.com/ https://accounts.google.com/ https://consent.google.com/; connect-src 'self' https://gemini.google.com/;"
+      "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline'; frame-src 'self' https://gemini.google.com/ https://accounts.google.com/ https://consent.google.com/ https://chatgpt.com/ https://auth.openai.com/ https://auth0.openai.com/; connect-src 'self' https://gemini.google.com/ https://chatgpt.com/;"
    },
-   "description": "Persistent Gemini Chats in Side Panel",
-   "host_permissions": [ "https://gemini.google.com/*", "https://accounts.google.com/*", "https://consent.google.com/*", "https://labs.google.com/*" ],
+   "description": "Persistent AI chats (Gemini, ChatGPT) in a side panel",
+   "host_permissions": [
+      "https://gemini.google.com/*",
+      "https://accounts.google.com/*",
+      "https://consent.google.com/*",
+      "https://labs.google.com/*",
+      "https://chatgpt.com/*",
+      "https://*.openai.com/*",
+      "https://*.oaistatic.com/*"
+   ],
    "icons": {
       "16": "images/logo-16.png",
       "32": "images/logo-32.png",
@@ -38,10 +59,10 @@
       "128": "images/logo-128.png"
    },
    "manifest_version": 3,
-   "name": "Gemini Side Panel Extended",
+   "name": "AI MultiTab Sidepanel",
    "permissions": [ "declarativeNetRequest", "sidePanel", "storage" ],
    "side_panel": {
       "default_path": "html/sidepanel.html"
    },
-   "version": "0.4.3"
+   "version": "0.6.3"
 }

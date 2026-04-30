@@ -247,3 +247,22 @@ input[type="checkbox"]:checked::after {
     line-height: 1;
     margin-left: 8px;
 }
+
+/* ============================================================
+   v0.5: Providers section + first-run notice
+   ============================================================ */
+
+.providers-group .first-run-notice {
+  display: none;
+  margin: 0 0 0.5rem 0;
+  padding: 0.5rem 0.625rem;
+  font-size: 0.8125rem;
+  background: var(--info-bg, rgba(138, 180, 248, 0.12));
+  border-left: 3px solid var(--accent-color, #8ab4f8);
+  border-radius: 0.25rem;
+  color: var(--text-primary);
+}
+
+.providers-group[data-first-run='true'] .first-run-notice {
+  display: block;
+}

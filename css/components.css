@@ -106,7 +106,6 @@
   outline-offset: 1px;
 }
 
-.add-tab-btn,
 .open-browser-btn,
 .toggle-bookmark-btn {
   width: 2rem;
@@ -142,17 +141,11 @@
   height: 18px;
 }
 
-.add-tab-btn:hover,
 .open-browser-btn:hover,
 .toggle-bookmark-btn:hover,
 .toolbar-btn:hover {
   background: var(--tab-hover-bg);
   color: var(--text-primary);
-}
-
-.add-tab-btn {
-  margin-left: 0.125rem;
-  font-size: 1.25rem;
 }
 
 .open-browser-btn {
@@ -251,3 +244,132 @@ iframe.active {
   pointer-events: none; /* Prevent clicks while closing */
 }
 
+
+
+
+/* ============================================================
+   v0.5: Multi-provider tab bar additions
+   ============================================================ */
+
+/* Provider picker: a single "+" trigger that reveals a vertical menu of
+   branded provider icons on hover, click, or keyboard activation. The
+   picker root reuses the existing #addTabGroup element. */
+.add-tab-group,
+.provider-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.provider-picker-trigger {
+  width: 2rem;
+  height: 1.75rem;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  border-radius: 0.25rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, color 0.2s;
+  flex-shrink: 0;
+  font-size: 1.25rem;
+  line-height: 1;
+  margin-left: 0.125rem;
+  padding: 0;
+}
+
+.provider-picker-trigger:hover,
+.provider-picker-trigger[aria-expanded="true"] {
+  background: var(--tab-hover-bg);
+  color: var(--text-primary);
+}
+
+.provider-picker-trigger:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 1px;
+}
+
+/* Menu uses position:fixed (set inline by JS) so it escapes
+   `.tab-bar { overflow-x: auto }` clipping. */
+.provider-picker-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--tab-active-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 4px;
+  z-index: 1200; /* above bookmarks/edit-dialog overlays (1000/1100) */
+  min-width: 2.25rem;
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Required because `display: flex` above would otherwise override the
+   default `display: none` from the `hidden` attribute. */
+.provider-picker-menu[hidden] {
+  display: none !important;
+}
+
+.provider-picker-item {
+  width: 1.75rem;
+  height: 1.75rem;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  border-radius: 0.25rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.provider-picker-item:hover,
+.provider-picker-item:focus-visible {
+  background: var(--tab-hover-bg);
+  color: var(--text-primary);
+  outline: none;
+}
+
+/* Match the icon size used in the tab pills for visual consistency. */
+.provider-picker-item svg {
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+}
+
+/* Small provider icon shown at the start of each tab pill. */
+.tab-provider-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.375rem;
+  color: var(--text-secondary);
+  pointer-events: none;
+  flex-shrink: 0;
+}
+.tab.active .tab-provider-icon {
+  color: var(--text-primary);
+}
+.tab-provider-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Drag-and-drop visual states. */
+.tab.dragging {
+  opacity: 0.4;
+}
+.tab.drop-before {
+  box-shadow: inset 4px 0 0 var(--accent-color, #8ab4f8);
+}
+.tab.drop-after {
+  box-shadow: inset -4px 0 0 var(--accent-color, #8ab4f8);
+}

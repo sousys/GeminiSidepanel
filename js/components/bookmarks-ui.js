@@ -1,5 +1,6 @@
 import { DOMIds, CSSClasses } from '../core/config.js';
 import { Icons } from '../core/icons.js';
+import { getProviderById } from '../core/provider-registry.js';
 
 export class BookmarksUI extends EventTarget {
     constructor() {
@@ -128,6 +129,16 @@ export class BookmarksUI extends EventTarget {
                 itemEl.classList.add('broken');
             }
 
+            // Provider brand icon (decorative). Always renders an element so
+            // titles align across rows even when the provider is unknown.
+            const provider = bookmark.providerId ? getProviderById(bookmark.providerId) : null;
+            const iconEl = document.createElement('span');
+            iconEl.className = 'bookmark-provider-icon';
+            iconEl.setAttribute('aria-hidden', 'true');
+            if (provider && provider.icon) {
+                iconEl.innerHTML = provider.icon;
+            }
+
             const titleEl = document.createElement('span');
             titleEl.className = 'bookmark-title';
             titleEl.textContent = bookmark.title;
@@ -162,6 +173,7 @@ export class BookmarksUI extends EventTarget {
                 this.openDeleteConfirmDialog(bookmark);
             });
 
+            itemEl.appendChild(iconEl);
             itemEl.appendChild(titleEl);
             itemEl.appendChild(editBtn);
             itemEl.appendChild(deleteBtn);
