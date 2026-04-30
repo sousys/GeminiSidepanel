@@ -1,19 +1,21 @@
 # Gemini Side Panel Extended
 
-**Gemini Side Panel Extended** is a Chrome Extension that integrates Google Gemini directly into your browser's side panel. It allows for a persistent, multi-tabbed experience, enabling you to maintain multiple conversation contexts simultaneously without leaving your current webpage.
+**Gemini Side Panel Extended** is a Chrome Extension that integrates Google Gemini directly into your browser's side panel. It provides a persistent, multi-tabbed experience, enabling you to maintain multiple conversation contexts simultaneously without leaving your current webpage.
 
 ## Features
 
 -   **Side Panel Integration**: Access Google Gemini instantly alongside your browsing.
--   **Multi-Tab Support**: Create and manage multiple Gemini tabs within the side panel itself.
--   **Bookmarks & Saved Chats**: Save specific chats as bookmarks for quick access. Organize your favorite conversations and open them in new tabs or focus existing ones.
--   **State Persistence (Optional)**: Your open tabs and current URLs are saved automatically by default. You can disable this in settings to always start with a fresh session.
--   **Smart Resource Management**: Background tabs are lazy-loaded and inactive tabs are unloaded to save system resources.
--   **Theme Support**: Automatically syncs with your system or browser theme preferences (Dark/Light/System).
--   **Refined User Interface**: Polished tab bar with uniform icon sizing and spacing for a cleaner look.
--   **Customizable Zoom**: Adjust the content size of the side panel from 50% to 120% via the Settings drawer.
--   **Keyboard Shortcut**: Fast access via `Alt+G` (default).
--   **Seamless Navigation**: Open any specific Gemini chat in a full browser tab with a single click.
+-   **Multi-Tab Support**: Create and manage multiple Gemini tabs within the side panel.
+-   **Bookmarks & Saved Chats**: Save specific chats as bookmarks for quick access. Edit titles/URLs, detect broken links automatically, and organize your favorite conversations.
+-   **Release Notes**: View version history and changelog directly from within Settings.
+-   **State Persistence (Optional)**: Open tabs and URLs are saved automatically by default. Disable in Settings to always start with a fresh session.
+-   **Smart Resource Management**: Background tabs are lazy-loaded; inactive tabs are unloaded after 2 hours to save system resources.
+-   **Theme Support**: Syncs with your system or browser theme preferences (Dark/Light/System) with smooth transitions.
+-   **Customizable Zoom**: Adjust content size from 50% to 120% via the Settings drawer.
+-   **Keyboard Navigation**: Arrow keys to switch tabs, Enter/Space to activate, Delete to close. Roving tabindex with focus restoration.
+-   **Accessibility**: ARIA labels on all icon buttons, screen-reader-friendly controls, focus management.
+-   **Keyboard Shortcut**: Fast panel access via `Alt+G` (default).
+-   **Seamless Navigation**: Open any Gemini chat in a full browser tab with a single click.
 
 ## Installation
 
@@ -31,62 +33,77 @@ Since this extension is not yet in the Chrome Web Store, you can install it in D
 1.  **Open the Panel**: Click the extension icon in the toolbar or press `Alt+G`.
 2.  **Manage Tabs**:
     -   Click **+** to add a new fresh Gemini session.
-    -   Click the **x** on a tab to close it.
+    -   Click the **x** on a tab to close it (or press `Delete` when a tab is focused).
+    -   Use **Arrow Left/Right** keys to navigate between tabs.
     -   Switch between tabs to maintain different conversation contexts (e.g., "Coding", "Writing", "General").
 3.  **Bookmarks**:
-    -   Click the **bookmark icon** (star) in the top tab bar to save the current chat.
-    -   Access your saved chats via the **Bookmarks list** button in the sidebar.
-    -   Click on a bookmark to open it. Use the **edit (pencil)** icon to rename bookmarks or the **delete (trash can)** icon to remove them.
-4.  **Settings**: Click the **Settings (gear icon)** in the bottom-left toolbar of the side panel to open the **Settings Drawer**:
+    -   Click the **bookmark icon** in the tab bar to save/unsave the current chat.
+    -   Access your saved chats via the **Bookmarks list** button in the right sidebar.
+    -   Click on a bookmark to open it. Use the **edit (pencil)** icon to rename bookmarks or the **delete (trash)** icon to remove them.
+    -   Broken bookmarks (deleted or moved conversations) are detected automatically and visually flagged.
+4.  **Settings**: Click the **Settings (gear icon)** at the bottom of the right sidebar to open the **Settings Drawer**:
     -   Configure theme preferences (System, Light, or Dark).
-    -   Adjust the content zoom level (50% - 120%) to better fit your screen.
-    -   **Behavior**: Enable or disable tab persistence. Disabling it ensures a fresh start every time you open the panel.
+    -   Adjust the content zoom level (50%–120%).
+    -   Enable or disable tab persistence.
+    -   View **Release Notes** for version history.
+5.  **Buy Me a Coffee**: Support link available in the right sidebar toolbar.
 
 ## Technical Architecture
 
-This extension uses a modern, modular **Component-Based Architecture** with **JS-Driven UI Rendering**. The codebase is organized into distinct layers for core logic, reusable components, feature modules, and platform-specific scripts.
+This extension uses a modern, modular **Component-Based Architecture** with **JS-Driven UI Rendering**. The codebase is organized into layers: core logic, reusable components, feature modules, and platform-specific scripts.
 
 ### Architectural Layers
 
 1.  **Core (`js/core/`)**:
-    -   **`app.js`**: The main entry point and controller. It initializes the application, composes components, and handles high-level event coordination.
-    -   **`store.js`**: The centralized State Manager (Model). It manages the single source of truth for tabs and active state, handling persistence and notifying subscribers of changes.
-    -   **`config.js`**: Centralized configuration for constants, DOM IDs, CSS classes, and timeouts.
-    -   **`utils.js`**: Shared utility functions.
+    -   **`app.js`**: Main entry point and controller. Initializes the application, composes components, and coordinates inter-component events (including 3-way mutual exclusion between Settings, Bookmarks, and Release Notes modals).
+    -   **`store.js`**: Centralized State Manager. Single source of truth for tabs and active state, with persistence, validation, and debounced writes to `chrome.storage`.
+    -   **`config.js`**: Constants for storage keys, DOM IDs, CSS classes, timeouts, origins, and defaults.
+    -   **`icons.js`**: SVG icon definitions used across the UI.
+    -   **`utils.js`**: Shared utility functions (e.g., `crypto.randomUUID()`-based ID generation).
 
 2.  **Components (`js/components/`)**:
-    -   **`ui-manager.js` (ViewRenderer)**: The primary UI orchestrator. It manages the lifecycle of the UI, including modals and event delegation.
-    -   **`tabs-ui.js` (TabBar)**: Manages the tab strip interface, including rendering, switching, and animation logic.
-    -   **`web-views.js` (IframeHandler)**: Handles the creation and lifecycle of `iframe` elements. It implements performance optimizations like lazy-loading and inactivity unloading.
+    -   **`ui-manager.js` (ViewRenderer)**: Primary UI orchestrator. Composes TabBar, IframeHandler, BookmarksUI, and ReleaseNotesUI. Manages modal lifecycle and event delegation.
+    -   **`tabs-ui.js` (TabBar)**: Tab strip rendering, switching, animations (slide-in/out), keyboard navigation (roving tabindex), and focus management.
+    -   **`web-views.js` (IframeHandler)**: Creates and manages `iframe` elements with lazy-loading and inactivity-based unloading.
+    -   **`bookmarks-ui.js` (BookmarksUI)**: Bookmarks modal DOM, edit/delete sub-dialogs, broken-link indicators.
+    -   **`release-notes-ui.js` (ReleaseNotesUI)**: Release Notes modal with async JSON data loading, session-lifetime caching, and XSS-safe HTML rendering.
 
 3.  **Features (`js/features/`)**:
-    -   **`bookmarks.js`**: Manages bookmark storage, logic, and its specific UI rendering (Modals).
-    -   **`settings.js`**: Handles user preferences (theme, zoom, persistence) and the Settings UI.
-    -   **`theme.js`**: Manages theme application and synchronization with system/browser preferences.
-    -   **`zoom.js`**: Handles content scaling logic.
+    -   **`bookmarks.js`**: Bookmark storage, CRUD operations, and data validation.
+    -   **`link-validator.js`**: Detects broken Gemini deep links by checking redirect-to-`/app` behavior.
+    -   **`settings.js`**: User preferences (theme, zoom, persistence) and Settings panel UI. Dispatches events for Release Notes access.
+    -   **`theme.js`**: Theme application, system-preference synchronization, and flash-of-wrong-theme prevention.
+    -   **`zoom.js`**: Content scaling with clamped range (50–120%) and corrupt-value protection.
 
 4.  **Platform (`js/platform/`)**:
-    -   **`service-worker.js`**: The background service worker. Handles extension lifecycle and uses `declarativeNetRequest` to strip `X-Frame-Options` headers, allowing Gemini to run in the side panel.
-    -   **`content-script.js`**: Injected into the Gemini frame to bridge communication (URL/Title updates) between the SPA and the extension using `postMessage`.
+    -   **`service-worker.js`**: Background service worker. Uses `declarativeNetRequest` to strip `content-security-policy` and `x-frame-options` headers, allowing Gemini to be embedded in the side panel iframe.
+    -   **`content-script.js`**: Injected into Gemini frames to bridge URL/title updates between the SPA and the extension via `postMessage`.
 
 ### Key Design Decisions
 
--   **JS-Driven Rendering**: HTML files are minimal (only `sidepanel.html` exists as a skeleton). All other UI components (tabs, modals, lists) are rendered dynamically via JavaScript template literals. This allows for a more flexible and component-oriented structure.
--   **Event-Driven Communication**: Components communicate via `CustomEvent` dispatching (e.g., `tab-switch`, `bookmark-toggle`) and a subscription pattern in the State Manager.
--   **Performance**: Background tabs are lazy-loaded to minimize memory usage, and the state is persisted to `chrome.storage` with debouncing.
+-   **JS-Driven Rendering**: HTML is minimal (`sidepanel.html` is a skeleton). All UI components (tabs, modals, lists) are rendered dynamically via JavaScript template literals for a flexible, component-oriented structure.
+-   **Event-Driven Communication**: Components extend `EventTarget` and communicate via `CustomEvent` dispatching. State changes propagate through a pub/sub pattern.
+-   **CSS Architecture**: Styles are split into four scoped files (`base.css` → `components.css` → `modals.css` → `settings.css`) loaded in dependency order. CSS custom properties enable theming.
+-   **Performance**: Lazy-loaded background tabs, debounced state persistence, session-lifetime data caching, and `requestAnimationFrame`-gated theme transitions.
+-   **Security**: XSS protection via `escapeHtml()` on all user-facing data rendering. `crypto.randomUUID()` for collision-safe IDs. Minimal header stripping in the service worker.
 
 ## Project Structure
 
 ```text
 ├── css/
 │   ├── base.css             # Theme variables, resets, layout containers
-│   ├── components.css       # Tabs, content area, animations
-│   └── modals.css           # Bookmarks/Settings/Release-Notes modals & dialogs
+│   ├── components.css       # Tabs, buttons, content area, animations
+│   ├── modals.css           # Modal infrastructure, bookmarks, dialogs, release-notes content
+│   └── settings.css         # Settings panel form controls, slider, about section
+├── data/
+│   └── release-notes.json   # Version history (loaded at runtime via fetch)
 ├── html/
 │   └── sidepanel.html       # Main entry point (skeleton)
-├── images/                  # Icons and assets
+├── images/                  # Extension icons (16/32/48/128px)
 ├── js/
 │   ├── components/          # UI Components
+│   │   ├── bookmarks-ui.js
+│   │   ├── release-notes-ui.js
 │   │   ├── tabs-ui.js
 │   │   ├── ui-manager.js
 │   │   └── web-views.js
@@ -98,6 +115,7 @@ This extension uses a modern, modular **Component-Based Architecture** with **JS
 │   │   └── utils.js
 │   ├── features/            # Feature Modules
 │   │   ├── bookmarks.js
+│   │   ├── link-validator.js
 │   │   ├── settings.js
 │   │   ├── theme.js
 │   │   └── zoom.js
@@ -108,6 +126,6 @@ This extension uses a modern, modular **Component-Based Architecture** with **JS
 └── README.md                # This file
 ```
 
-## License
+## Version
 
-[MIT](LICENSE)
+Current version: **0.4.3** — see `data/release-notes.json` for full changelog.
