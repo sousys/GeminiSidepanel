@@ -1,10 +1,33 @@
 import { StorageKeys } from '../core/config.js';
 
+const DEFAULT_ZOOM = 100;
+const MIN_ZOOM = 50;
+const MAX_ZOOM = 120;
+
+/**
+ * Apply a zoom percentage to the document body. Clamps the value to the
+ * supported range and updates `body.style.height` so layout still fits the
+ * viewport (CSS `zoom` shrinks the visual size but not the content height).
+ *
+ * Exported as a standalone helper so UI controls (e.g. the settings slider)
+ * can preview zoom changes live during drag without depending on an instance
+ * of `ZoomManager`.
+ *
+ * @param {number|string} zoomPercent
+ */
+export function applyZoomToBody(zoomPercent) {
+    const parsed = parseInt(zoomPercent, 10) || DEFAULT_ZOOM;
+    const clamped = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, parsed));
+    const zoomLevel = clamped / 100;
+    document.body.style.zoom = zoomLevel;
+    document.body.style.height = (100 / zoomLevel) + 'vh';
+}
+
 export class ZoomManager {
     constructor() {
-        this.DEFAULT_ZOOM = 100;
-        this.MIN_ZOOM = 50;
-        this.MAX_ZOOM = 120;
+        this.DEFAULT_ZOOM = DEFAULT_ZOOM;
+        this.MIN_ZOOM = MIN_ZOOM;
+        this.MAX_ZOOM = MAX_ZOOM;
     }
 
     async init() {
@@ -30,11 +53,6 @@ export class ZoomManager {
     }
 
     applyZoom(zoomPercent) {
-        // Clamp against corrupt, NaN, or out-of-range values from storage.
-        const parsed = parseInt(zoomPercent, 10) || this.DEFAULT_ZOOM;
-        const clamped = Math.max(this.MIN_ZOOM, Math.min(this.MAX_ZOOM, parsed));
-        const zoomLevel = clamped / 100;
-        document.body.style.zoom = zoomLevel;
-        document.body.style.height = (100 / zoomLevel) + 'vh';
+        applyZoomToBody(zoomPercent);
     }
 }

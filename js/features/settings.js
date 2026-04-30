@@ -1,4 +1,15 @@
-﻿import { DOMIds, StorageKeys } from '../core/config.js';
+import { DOMIds, StorageKeys } from '../core/config.js';
+import { getAllProviders } from '../core/provider-registry.js';
+import { applyZoomToBody } from './zoom.js';
+
+/**
+ * Default state when no preference is persisted: every known provider enabled.
+ */
+function buildDefaultEnabledMap() {
+    const map = {};
+    for (const p of getAllProviders()) map[p.id] = true;
+    return map;
+}
 
 export class SettingsManager extends EventTarget {
     constructor() {
@@ -9,9 +20,19 @@ export class SettingsManager extends EventTarget {
         this.zoomValue = null;
         this.persistenceCheckbox = null;
         this.resetBrokenCheckbox = null;
+        this.providersGroupEl = null;
+        this.providerCheckboxes = []; // [{providerId, input}]
         this.closeBtn = null;
         this.modal = null;
         this.openReleaseNotesBtn = null;
+
+        // Listen for cross-context changes to keep checkboxes in sync.
+        chrome.storage.onChanged.addListener((changes, namespace) => {
+            if (namespace === 'sync' && changes[StorageKeys.ENABLED_PROVIDERS]) {
+                const next = changes[StorageKeys.ENABLED_PROVIDERS].newValue || {};
+                this.syncProviderCheckboxes(next);
+            }
+        });
     }
 
     async init() {
@@ -21,6 +42,10 @@ export class SettingsManager extends EventTarget {
         this.zoomValue = document.getElementById('zoomValue');
         this.persistenceCheckbox = document.getElementById('persistenceCheckbox');
         this.resetBrokenCheckbox = document.getElementById('resetBrokenCheckbox');
+        this.providersGroupEl = document.getElementById(DOMIds.PROVIDERS_GROUP);
+        this.providerCheckboxes = Array.from(
+            this.providersGroupEl ? this.providersGroupEl.querySelectorAll('input[type="checkbox"][data-provider-id]') : []
+        ).map(input => ({ providerId: input.getAttribute('data-provider-id'), input }));
         this.closeBtn = document.getElementById('closeSettingsBtn');
         this.modal = document.getElementById('settingsModal');
         this.openReleaseNotesBtn = document.getElementById(DOMIds.OPEN_RELEASE_NOTES_BTN);
@@ -33,9 +58,7 @@ export class SettingsManager extends EventTarget {
     populateVersionInfo() {
         const manifest = chrome.runtime.getManifest();
         const versionEl = document.getElementById('extensionVersion');
-        if (versionEl) {
-            versionEl.textContent = `v${manifest.version}`;
-        }
+        if (versionEl) versionEl.textContent = `v${manifest.version}`;
     }
 
     async loadSettings() {
@@ -44,9 +67,10 @@ export class SettingsManager extends EventTarget {
                 StorageKeys.THEME_PREF,
                 StorageKeys.PANEL_ZOOM,
                 StorageKeys.PERSISTENCE_PREF,
-                StorageKeys.RESET_BROKEN_ON_START
+                StorageKeys.RESET_BROKEN_ON_START,
+                StorageKeys.ENABLED_PROVIDERS
             ]);
-            
+
             const currentTheme = data[StorageKeys.THEME_PREF] || 'system';
             if (this.themeRadios) {
                 for (const radio of this.themeRadios) {
@@ -57,28 +81,29 @@ export class SettingsManager extends EventTarget {
                 }
             }
 
-            // --- Zoom Logic ---
             const currentZoom = data[StorageKeys.PANEL_ZOOM] || 100;
-            if (this.zoomSlider) {
-                this.zoomSlider.value = currentZoom;
-            }
-            if (this.zoomValue) {
-                this.zoomValue.textContent = currentZoom + '%';
-            }
+            if (this.zoomSlider) this.zoomSlider.value = currentZoom;
+            if (this.zoomValue) this.zoomValue.textContent = currentZoom + '%';
 
-            // --- Persistence Logic ---
             if (this.persistenceCheckbox) {
-                // Default to true if undefined
                 this.persistenceCheckbox.checked = data[StorageKeys.PERSISTENCE_PREF] !== false;
             }
 
-            // --- Reset Broken Logic ---
             if (this.resetBrokenCheckbox) {
                 this.resetBrokenCheckbox.checked = !!data[StorageKeys.RESET_BROKEN_ON_START];
             }
+
+            const enabledMap = data[StorageKeys.ENABLED_PROVIDERS] || buildDefaultEnabledMap();
+            this.syncProviderCheckboxes(enabledMap);
         } catch (error) {
             console.error('Failed to load settings:', error);
             this.showStatus('Failed to load settings');
+        }
+    }
+
+    syncProviderCheckboxes(enabledMap) {
+        for (const { providerId, input } of this.providerCheckboxes) {
+            input.checked = enabledMap[providerId] !== false;
         }
     }
 
@@ -87,9 +112,8 @@ export class SettingsManager extends EventTarget {
             this.themeRadios.forEach(radio => {
                 radio.addEventListener('change', async () => {
                     if (radio.checked) {
-                        const theme = radio.value;
                         try {
-                            await chrome.storage.sync.set({ [StorageKeys.THEME_PREF]: theme });
+                            await chrome.storage.sync.set({ [StorageKeys.THEME_PREF]: radio.value });
                             this.showStatus('Theme preference saved!');
                         } catch (error) {
                             console.error('Failed to save theme:', error);
@@ -101,12 +125,14 @@ export class SettingsManager extends EventTarget {
         }
 
         if (this.zoomSlider) {
+            // `input` fires on every value change (including during drag) —
+            // update the label AND apply the zoom live so the user sees
+            // resizing immediately. `change` fires once on commit (mouseup,
+            // keyboard release, blur) and persists the chosen value.
             this.zoomSlider.addEventListener('input', () => {
-                if (this.zoomValue) {
-                    this.zoomValue.textContent = this.zoomSlider.value + '%';
-                }
+                if (this.zoomValue) this.zoomValue.textContent = this.zoomSlider.value + '%';
+                applyZoomToBody(this.zoomSlider.value);
             });
-
             this.zoomSlider.addEventListener('change', async () => {
                 const zoom = parseInt(this.zoomSlider.value, 10);
                 try {
@@ -121,9 +147,8 @@ export class SettingsManager extends EventTarget {
 
         if (this.persistenceCheckbox) {
             this.persistenceCheckbox.addEventListener('change', async () => {
-                const enabled = this.persistenceCheckbox.checked;
                 try {
-                    await chrome.storage.sync.set({ [StorageKeys.PERSISTENCE_PREF]: enabled });
+                    await chrome.storage.sync.set({ [StorageKeys.PERSISTENCE_PREF]: this.persistenceCheckbox.checked });
                     this.showStatus('Persistence setting saved!');
                 } catch (error) {
                     console.error('Failed to save persistence:', error);
@@ -134,9 +159,8 @@ export class SettingsManager extends EventTarget {
 
         if (this.resetBrokenCheckbox) {
             this.resetBrokenCheckbox.addEventListener('change', async () => {
-                const enabled = this.resetBrokenCheckbox.checked;
                 try {
-                    await chrome.storage.sync.set({ [StorageKeys.RESET_BROKEN_ON_START]: enabled });
+                    await chrome.storage.sync.set({ [StorageKeys.RESET_BROKEN_ON_START]: this.resetBrokenCheckbox.checked });
                     this.showStatus('Setting saved!');
                 } catch (error) {
                     console.error('Failed to save reset broken setting:', error);
@@ -144,11 +168,30 @@ export class SettingsManager extends EventTarget {
                 }
             });
         }
-        
-        if (this.closeBtn) {
-            this.closeBtn.addEventListener('click', () => {
-                this.closeModal();
+
+        // Providers checkboxes — guard against disabling the last one.
+        for (const { providerId, input } of this.providerCheckboxes) {
+            input.addEventListener('change', async () => {
+                const desired = this.collectEnabledMap();
+                const anyEnabled = Object.values(desired).some(v => v === true);
+                if (!anyEnabled) {
+                    input.checked = true; // Revert in DOM
+                    desired[providerId] = true;
+                    this.showStatus('At least one provider must be enabled');
+                    return;
+                }
+                try {
+                    await chrome.storage.sync.set({ [StorageKeys.ENABLED_PROVIDERS]: desired });
+                    this.showStatus('Providers updated');
+                } catch (error) {
+                    console.error('Failed to save enabled providers:', error);
+                    this.showStatus('Failed to save providers');
+                }
             });
+        }
+
+        if (this.closeBtn) {
+            this.closeBtn.addEventListener('click', () => this.closeModal());
         }
 
         if (this.openReleaseNotesBtn) {
@@ -158,12 +201,18 @@ export class SettingsManager extends EventTarget {
         }
 
         if (this.modal) {
-             this.modal.addEventListener('click', (e) => {
-                if (e.target === this.modal) {
-                    this.closeModal();
-                }
+            this.modal.addEventListener('click', (e) => {
+                if (e.target === this.modal) this.closeModal();
             });
         }
+    }
+
+    collectEnabledMap() {
+        const map = {};
+        for (const { providerId, input } of this.providerCheckboxes) {
+            map[providerId] = input.checked;
+        }
+        return map;
     }
 
     showStatus(message) {
@@ -173,27 +222,57 @@ export class SettingsManager extends EventTarget {
         }
     }
 
-    async openModal() {
-        if (this.modal) {
-            this.modal.classList.add('open');
-            // Refresh settings in case they were changed elsewhere
-            await this.loadSettings();
+    /**
+     * Open the modal. If `firstRun` is true, surfaces the first-run notice
+     * inside the Providers section and focuses the first provider checkbox.
+     */
+    async openModal({ firstRun = false } = {}) {
+        if (!this.modal) return;
+        this.modal.classList.add('open');
+        await this.loadSettings();
+
+        if (this.providersGroupEl) {
+            if (firstRun) {
+                this.providersGroupEl.setAttribute('data-first-run', 'true');
+                const firstInput = this.providersGroupEl.querySelector('input[type="checkbox"][data-provider-id]');
+                if (firstInput) firstInput.focus();
+            } else {
+                this.providersGroupEl.removeAttribute('data-first-run');
+            }
         }
     }
 
     closeModal() {
-        if (this.modal) {
-            this.modal.classList.remove('open');
-        }
+        if (!this.modal) return;
+        this.modal.classList.remove('open');
+        if (this.providersGroupEl) this.providersGroupEl.removeAttribute('data-first-run');
     }
-    
+
     isOpen() {
         return this.modal && this.modal.classList.contains('open');
     }
 
     render(container) {
         container.insertAdjacentHTML('beforeend', this.getTemplate());
-        this.init();
+        // Return the init() promise so callers can await full initialization
+        // (storage reads + listener attachment) before opening the modal.
+        return this.init();
+    }
+
+    getProvidersTemplate() {
+        const items = getAllProviders().map(p => `
+            <label>
+                <input type="checkbox" id="provider-${p.id}" data-provider-id="${p.id}">
+                ${p.name}
+            </label>
+        `).join('');
+        return `
+            <h2>Providers</h2>
+            <div id="${DOMIds.PROVIDERS_GROUP}" class="settings-group providers-group">
+                <p class="first-run-notice">Choose which AI providers you want to use. You can change this later.</p>
+                ${items}
+            </div>
+        `;
     }
 
     getTemplate() {
@@ -205,6 +284,8 @@ export class SettingsManager extends EventTarget {
                         <button id="closeSettingsBtn" class="modal-close-btn">&times;</button>
                     </div>
                     <div id="settingsContent" style="padding: 16px; overflow-y: auto;">
+                        ${this.getProvidersTemplate()}
+
                         <h2>Theme</h2>
                         <div id="themeSettings" class="settings-group">
                             <label><input type="radio" name="theme" value="system"> System</label>
@@ -248,13 +329,13 @@ export class SettingsManager extends EventTarget {
                                 Reset 'Broken' bookmarks on startup
                             </label>
                         </div>
-                        
+
                         <div id="settingsStatus"></div>
 
                         <h2>About</h2>
                         <div class="settings-about">
                             <div class="about-header">
-                                <span class="about-name">Gemini Side Panel Extended</span>
+                                <span class="about-name">AI MultiTab Sidepanel</span>
                                 <span id="extensionVersion" class="about-version"></span>
                             </div>
                         </div>
@@ -269,4 +350,3 @@ export class SettingsManager extends EventTarget {
         `;
     }
 }
-

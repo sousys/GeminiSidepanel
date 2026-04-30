@@ -1,5 +1,40 @@
 [
     {
+        "version": "v0.6.3",
+        "items": [
+            "Fixed: ChatGPT tab titles now reliably reflect navigation inside the app (new chat, switching conversations) without needing to switch tabs in the side panel"
+        ]
+    },
+    {
+        "version": "v0.6.2",
+        "items": [
+            "Fixed: ChatGPT tab titles now update reliably when starting a new chat or switching conversations inside the app (observes the conversation history list directly)"
+        ]
+    },
+    {
+        "version": "v0.6.0",
+        "items": [
+            "Branded provider icons: real Gemini sparkle and OpenAI monoblossom on tabs and bookmarks",
+            "New Chat: single '+' button reveals a vertical provider picker on hover, click, or keyboard",
+            "Provider picker is keyboard-accessible (Enter/Space/Arrow keys, Escape to close)",
+            "Bookmarks now show the originating provider's icon before the title",
+            "Existing bookmarks are auto-migrated to remember their provider",
+            "Zoom slider in Settings now resizes the panel live while you drag",
+            "Removed unused Gemini PNG assets"
+        ]
+    },
+    {
+        "version": "v0.5.0",
+        "items": [
+            "Renamed to 'AI MultiTab Sidepanel'",
+            "ChatGPT support alongside Gemini",
+            "Per-provider New Chat buttons",
+            "Provider icon on each tab",
+            "Drag-and-drop tab reordering",
+            "Enable/disable providers in Settings (first-run picker)"
+        ]
+    },
+    {
         "version": "v0.4.3",
         "items": [
             "Code organization: settings styles moved to a separate stylesheet"

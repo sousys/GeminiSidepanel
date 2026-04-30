@@ -1,20 +1,39 @@
-import { StorageKeys, Defaults, Timeouts } from './config.js';
+import { StorageKeys, Timeouts } from './config.js';
 import { generateId } from './utils.js';
+import { getProviderById } from './provider-registry.js';
+
+/**
+ * @typedef {Object} Tab
+ * @property {string} id          - Unique id (crypto.randomUUID())
+ * @property {string} title       - Conversation title or provider default
+ * @property {string} url         - Current iframe URL
+ * @property {number} lastActive  - Timestamp; used for inactivity unloading
+ * @property {string} provider    - Provider id (e.g. 'gemini', 'chatgpt')
+ * @property {boolean} [broken]   - Set when a deep link auto-redirected
+ */
 
 export class StateManager {
-    constructor() {
+    /**
+     * @param {Object} [options]
+     * @param {() => string} [options.resolveDefaultProvider] - Returns provider id
+     *   to use when addTab() is called without an explicit providerId. Should be
+     *   wired by the App layer to consult the user's enabled-providers preference.
+     */
+    constructor({ resolveDefaultProvider } = {}) {
         this.tabs = [];
         this.activeTabId = null;
         this.listeners = [];
         this.saveDebounceTimer = null;
+        this.resolveDefaultProvider = typeof resolveDefaultProvider === 'function'
+            ? resolveDefaultProvider
+            : () => null;
+
         // Cached locally so save() doesn't need to read storage on every debounced write.
-        // Default to true; init() will refresh, and onChanged keeps it in sync.
         this.persistenceEnabled = true;
         // Guard against the constructor's empty `tabs = []` being written to
         // storage if pagehide fires before init() finishes loading.
         this.initialized = false;
 
-        // Keep cached preference fresh if changed elsewhere (e.g. Settings page).
         chrome.storage.onChanged.addListener((changes, namespace) => {
             if (namespace === 'sync' && changes[StorageKeys.PERSISTENCE_PREF]) {
                 this.persistenceEnabled = changes[StorageKeys.PERSISTENCE_PREF].newValue !== false;
@@ -22,9 +41,6 @@ export class StateManager {
         });
 
         // Flush any pending debounced write before the side panel is closed.
-        // pagehide is the only reliable lifecycle hook in the side panel context.
-        // Registered in the constructor (not init) so we never miss an immediate
-        // close; the `initialized` flag in flush() handles the not-yet-loaded case.
         window.addEventListener('pagehide', () => this.flush());
     }
 
@@ -57,16 +73,18 @@ export class StateManager {
             return;
         }
 
-        // Defensive: stored value may be missing, null, or corrupted to a non-array.
         const rawTabs = Array.isArray(data[StorageKeys.TABS]) ? data[StorageKeys.TABS] : [];
         const originalCount = rawTabs.length;
 
-        // Validate each entry before trusting it. Discard anything malformed.
+        // Validate each entry. Discard anything malformed or referencing an
+        // unknown provider (no backwards compatibility — provider field is required).
         const validTabs = rawTabs.filter(t =>
             t && typeof t === 'object' &&
             typeof t.id === 'string' && t.id.length > 0 &&
             typeof t.url === 'string' && t.url.length > 0 &&
-            typeof t.title === 'string'
+            typeof t.title === 'string' &&
+            typeof t.provider === 'string' && t.provider.length > 0 &&
+            getProviderById(t.provider) !== null
         );
 
         const discarded = originalCount - validTabs.length;
@@ -74,25 +92,21 @@ export class StateManager {
             console.warn(`StateManager: discarded ${discarded} malformed tab entries from storage.`);
         }
 
-        // Filter out extension pages (like Settings) from previous sessions
         const filteredTabs = validTabs.filter(t => !t.url.startsWith('chrome-extension://'));
 
         this.activeTabId = (typeof data[StorageKeys.ACTIVE_TAB] === 'string')
             ? data[StorageKeys.ACTIVE_TAB]
             : null;
 
-        // Deduplicate IDs and ensure lastActive — without mutating original entries.
         const seenIds = new Set();
         let stateChanged = discarded > 0 || filteredTabs.length !== originalCount;
 
         const newTabs = filteredTabs.map(tab => {
             let updatedTab = tab;
-
             if (!updatedTab.lastActive) {
                 updatedTab = { ...updatedTab, lastActive: Date.now() };
                 stateChanged = true;
             }
-
             if (seenIds.has(updatedTab.id)) {
                 updatedTab = { ...updatedTab, id: generateId() };
                 stateChanged = true;
@@ -103,7 +117,6 @@ export class StateManager {
 
         this.tabs = newTabs;
 
-        // Ensure activeTabId is valid
         const activeTabExists = this.tabs.some(t => t.id === this.activeTabId);
         if (this.tabs.length > 0 && !activeTabExists) {
             this.activeTabId = this.tabs[0].id;
@@ -145,21 +158,17 @@ export class StateManager {
             } catch (error) {
                 console.error('Failed to persist tabs to storage:', error);
             }
-        }, 500); // 500ms debounce
+        }, 500);
     }
 
     /**
      * Synchronously cancel any pending debounced save and write the current
-     * state immediately. Called on pagehide so we don't lose the last edits
+     * state immediately. Called on pagehide to avoid losing the last edits
      * when the side panel is closed.
      */
     flush() {
-        // CRITICAL: do nothing until init() has loaded actual state. Otherwise
-        // an immediate pagehide (rapid open-then-close) would write the
-        // constructor's empty tabs over the user's persisted data.
         if (!this.initialized) return;
 
-        // Clear the timer FIRST so the pending callback can't fire after us.
         if (this.saveDebounceTimer) {
             clearTimeout(this.saveDebounceTimer);
             this.saveDebounceTimer = null;
@@ -168,7 +177,6 @@ export class StateManager {
 
         try {
             const tabsToSave = this.tabs.filter(t => !t.url.startsWith('chrome-extension://'));
-            // Fire-and-forget; pagehide can't await.
             chrome.storage.local.set({
                 [StorageKeys.TABS]: tabsToSave,
                 [StorageKeys.ACTIVE_TAB]: this.activeTabId
@@ -190,19 +198,33 @@ export class StateManager {
         return this.tabs.find(t => t.id === this.activeTabId);
     }
 
-    addTab(title, url) {
+    /**
+     * Creates a new tab. providerId is required in practice — if omitted, the
+     * resolveDefaultProvider callback supplied at construction time is used.
+     * Title and URL default to the provider's defaults if not supplied.
+     *
+     * @returns {string|null} New tab id, or null if no provider could be resolved.
+     */
+    addTab(title, url, providerId) {
+        const resolvedId = providerId || this.resolveDefaultProvider();
+        const provider = resolvedId ? getProviderById(resolvedId) : null;
+        if (!provider) {
+            console.error('StateManager.addTab: cannot resolve provider', { providerId, resolvedId });
+            return null;
+        }
+
         const newId = generateId();
         const newTab = {
             id: newId,
-            title: title || Defaults.NEW_TAB_TITLE,
-            url: url || Defaults.NEW_TAB_URL,
-            lastActive: Date.now()
+            title: title || provider.defaultTitle,
+            url: url || provider.newChatUrl,
+            lastActive: Date.now(),
+            provider: provider.id
         };
-        
-        // Immutable add
+
         this.tabs = [newTab, ...this.tabs];
         this.activeTabId = newId;
-        
+
         this.save();
         this.notify();
         return newId;
@@ -212,32 +234,28 @@ export class StateManager {
         const index = this.tabs.findIndex(t => t.id === id);
         if (index === -1) return;
 
-        // Immutable remove
         this.tabs = this.tabs.filter(t => t.id !== id);
 
         if (id === this.activeTabId) {
             if (this.tabs.length > 0) {
-                // If we removed the active tab, select the next available one (or previous)
                 const newIndex = Math.max(0, index - 1);
-                // Be careful with bounds if index was 0
                 const safeIndex = Math.min(newIndex, this.tabs.length - 1);
                 this.activeTabId = this.tabs[safeIndex].id;
             } else {
-                this.activeTabId = null; 
+                this.activeTabId = null;
             }
         }
-        
+
         this.save();
         this.notify();
     }
 
     setActiveTab(id) {
         if (this.activeTabId === id) return;
-        
+
         const oldTabId = this.activeTabId;
         this.activeTabId = id;
-        
-        // Update timestamps for both
+
         const now = Date.now();
         this.tabs = this.tabs.map(t => {
             if (t.id === id || t.id === oldTabId) {
@@ -253,17 +271,15 @@ export class StateManager {
     updateTabUrl(id, url) {
         const index = this.tabs.findIndex(t => t.id === id);
         if (index === -1) return;
-        
+
         const tab = this.tabs[index];
         if (tab.url !== url) {
-            // Immutable update
             const updatedTab = { ...tab, url };
             this.tabs = [
                 ...this.tabs.slice(0, index),
                 updatedTab,
                 ...this.tabs.slice(index + 1)
             ];
-            
             this.save();
             this.notify();
         }
@@ -272,20 +288,55 @@ export class StateManager {
     updateTabTitle(id, title) {
         const index = this.tabs.findIndex(t => t.id === id);
         if (index === -1) return;
-        
+
         const tab = this.tabs[index];
         if (tab.title !== title) {
-             // Immutable update
-             const updatedTab = { ...tab, title };
-             this.tabs = [
-                 ...this.tabs.slice(0, index),
-                 updatedTab,
-                 ...this.tabs.slice(index + 1)
-             ];
-
+            const updatedTab = { ...tab, title };
+            this.tabs = [
+                ...this.tabs.slice(0, index),
+                updatedTab,
+                ...this.tabs.slice(index + 1)
+            ];
             this.save();
             this.notify();
         }
+    }
+
+    /**
+     * Reorder tabs by moving `draggedId` relative to `targetId`.
+     * Does not modify lastActive (reordering is not activation).
+     *
+     * @param {string} draggedId
+     * @param {string} targetId
+     * @param {'before'|'after'} position
+     */
+    reorderTabs(draggedId, targetId, position) {
+        if (!draggedId || !targetId || draggedId === targetId) return;
+        if (position !== 'before' && position !== 'after') return;
+
+        const draggedTab = this.tabs.find(t => t.id === draggedId);
+        const targetIndex = this.tabs.findIndex(t => t.id === targetId);
+        if (!draggedTab || targetIndex === -1) return;
+
+        const without = this.tabs.filter(t => t.id !== draggedId);
+        // Recompute target index in the filtered array.
+        const newTargetIndex = without.findIndex(t => t.id === targetId);
+        if (newTargetIndex === -1) return;
+
+        const insertAt = position === 'before' ? newTargetIndex : newTargetIndex + 1;
+        const next = [
+            ...without.slice(0, insertAt),
+            draggedTab,
+            ...without.slice(insertAt)
+        ];
+
+        // No-op if order unchanged.
+        const orderUnchanged = next.every((t, i) => t.id === this.tabs[i].id);
+        if (orderUnchanged) return;
+
+        this.tabs = next;
+        this.save();
+        this.notify();
     }
 
     shouldKeepTabLoaded(tab) {
