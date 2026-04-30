@@ -79,7 +79,9 @@ This extension uses a modern, modular **Component-Based Architecture** with **JS
 
 ```text
 ├── css/
-│   └── style.css            # Global styles and theme definitions
+│   ├── base.css             # Theme variables, resets, layout containers
+│   ├── components.css       # Tabs, content area, animations
+│   └── modals.css           # Bookmarks/Settings/Release-Notes modals & dialogs
 ├── html/
 │   └── sidepanel.html       # Main entry point (skeleton)
 ├── images/                  # Icons and assets

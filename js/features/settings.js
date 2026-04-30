@@ -1,7 +1,8 @@
-import { DOMIds, StorageKeys } from '../core/config.js';
+﻿import { DOMIds, StorageKeys } from '../core/config.js';
 
-export class SettingsManager {
+export class SettingsManager extends EventTarget {
     constructor() {
+        super();
         this.statusElement = null;
         this.themeRadios = null;
         this.zoomSlider = null;
@@ -10,6 +11,7 @@ export class SettingsManager {
         this.resetBrokenCheckbox = null;
         this.closeBtn = null;
         this.modal = null;
+        this.openReleaseNotesBtn = null;
     }
 
     async init() {
@@ -21,21 +23,31 @@ export class SettingsManager {
         this.resetBrokenCheckbox = document.getElementById('resetBrokenCheckbox');
         this.closeBtn = document.getElementById('closeSettingsBtn');
         this.modal = document.getElementById('settingsModal');
+        this.openReleaseNotesBtn = document.getElementById(DOMIds.OPEN_RELEASE_NOTES_BTN);
 
+        this.populateVersionInfo();
         await this.loadSettings();
         this.attachListeners();
+    }
+
+    populateVersionInfo() {
+        const manifest = chrome.runtime.getManifest();
+        const versionEl = document.getElementById('extensionVersion');
+        if (versionEl) {
+            versionEl.textContent = `v${manifest.version}`;
+        }
     }
 
     async loadSettings() {
         try {
             const data = await chrome.storage.sync.get([
-                'theme_preference', 
-                'panel_zoom', 
+                StorageKeys.THEME_PREF,
+                StorageKeys.PANEL_ZOOM,
                 StorageKeys.PERSISTENCE_PREF,
                 StorageKeys.RESET_BROKEN_ON_START
             ]);
             
-            const currentTheme = data.theme_preference || 'system';
+            const currentTheme = data[StorageKeys.THEME_PREF] || 'system';
             if (this.themeRadios) {
                 for (const radio of this.themeRadios) {
                     if (radio.value === currentTheme) {
@@ -46,7 +58,7 @@ export class SettingsManager {
             }
 
             // --- Zoom Logic ---
-            const currentZoom = data.panel_zoom || 100;
+            const currentZoom = data[StorageKeys.PANEL_ZOOM] || 100;
             if (this.zoomSlider) {
                 this.zoomSlider.value = currentZoom;
             }
@@ -77,7 +89,7 @@ export class SettingsManager {
                     if (radio.checked) {
                         const theme = radio.value;
                         try {
-                            await chrome.storage.sync.set({ 'theme_preference': theme });
+                            await chrome.storage.sync.set({ [StorageKeys.THEME_PREF]: theme });
                             this.showStatus('Theme preference saved!');
                         } catch (error) {
                             console.error('Failed to save theme:', error);
@@ -98,7 +110,7 @@ export class SettingsManager {
             this.zoomSlider.addEventListener('change', async () => {
                 const zoom = parseInt(this.zoomSlider.value, 10);
                 try {
-                    await chrome.storage.sync.set({ 'panel_zoom': zoom });
+                    await chrome.storage.sync.set({ [StorageKeys.PANEL_ZOOM]: zoom });
                     this.showStatus('Zoom preference saved!');
                 } catch (error) {
                     console.error('Failed to save zoom:', error);
@@ -136,6 +148,12 @@ export class SettingsManager {
         if (this.closeBtn) {
             this.closeBtn.addEventListener('click', () => {
                 this.closeModal();
+            });
+        }
+
+        if (this.openReleaseNotesBtn) {
+            this.openReleaseNotesBtn.addEventListener('click', () => {
+                this.dispatchEvent(new CustomEvent('release-notes-open'));
             });
         }
 
@@ -232,9 +250,23 @@ export class SettingsManager {
                         </div>
                         
                         <div id="settingsStatus"></div>
+
+                        <h2>About</h2>
+                        <div class="settings-about">
+                            <div class="about-header">
+                                <span class="about-name">Gemini Side Panel Extended</span>
+                                <span id="extensionVersion" class="about-version"></span>
+                            </div>
+                        </div>
+
+                        <button id="${DOMIds.OPEN_RELEASE_NOTES_BTN}" class="settings-link-btn">
+                            <span>Release Notes</span>
+                            <span class="settings-link-chevron" aria-hidden="true">&rsaquo;</span>
+                        </button>
                     </div>
                 </div>
             </div>
         `;
     }
 }
+

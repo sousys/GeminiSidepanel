@@ -114,7 +114,10 @@
                     
                     if (sidebarItem) {
                         const titleElement = sidebarItem.querySelector('.conversation-title') || sidebarItem;
-                        currentTitle = titleElement.innerText.trim();
+                        // Use textContent (not innerText) to avoid forcing a layout recalc
+                        // inside the MutationObserver callback. Gemini's title element
+                        // contains a plain text node, so collapsed whitespace is fine.
+                        currentTitle = (titleElement.textContent || '').trim();
                     }
                 }
             }

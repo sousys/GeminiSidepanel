@@ -1,0 +1,46 @@
+[
+    {
+        "version": "v0.4.3",
+        "items": [
+            "Code organization: settings styles moved to a separate stylesheet"
+        ]
+    },
+    {
+        "version": "v0.4.2",
+        "items": [
+            "Fixed: release notes modal now scrolls when content exceeds the visible area"
+        ]
+    },
+    {
+        "version": "v0.4.1",
+        "items": [
+            "Release notes content moved to a dedicated data file"
+        ]
+    },
+    {
+        "version": "v0.4.0",
+        "items": [
+            "Improved security: reduced unnecessary header modifications",
+            "Added data validation and error recovery for stored tabs & bookmarks",
+            "Flush pending state on panel close to prevent data loss",
+            "Use crypto.randomUUID() for tab IDs (collision-safe)",
+            "Smooth theme transitions (no flash on panel open)",
+            "Material 3 tonal error colors (WCAG AA contrast)",
+            "Keyboard navigation for tab bar (arrows, Enter, Delete)",
+            "ARIA labels on icon buttons for screen readers",
+            "Focus restoration after closing tabs (no focus theft)",
+            "Release Notes & version info in Settings"
+        ]
+    },
+    {
+        "version": "v0.3.0",
+        "items": [
+            "Bookmarks with edit & broken-link detection",
+            "Persistent tabs across panel reopens",
+            "Light & dark theme with system preference",
+            "Content zoom (50%–120%)",
+            "Open current tab in browser",
+            "Buy-me-a-coffee link in toolbar"
+        ]
+    }
+]

@@ -3,7 +3,9 @@ export const StorageKeys = {
     ACTIVE_TAB: 'gemini_active_tab',
     PERSISTENCE_PREF: 'persistence_enabled',
     BOOKMARKS: 'gemini_bookmarks',
-    RESET_BROKEN_ON_START: 'reset_broken_on_start'
+    RESET_BROKEN_ON_START: 'reset_broken_on_start',
+    THEME_PREF: 'theme_preference',
+    PANEL_ZOOM: 'panel_zoom'
 };
 
 export const MessageTypes = {
@@ -41,7 +43,10 @@ export const DOMIds = {
     CANCEL_DELETE_BTN: 'cancelDeleteBtn',
     CONFIRM_DELETE_BTN: 'confirmDeleteBtn',
     SETTINGS_MODAL: 'settingsModal',
-    CLOSE_SETTINGS_BTN: 'closeSettingsBtn'
+    CLOSE_SETTINGS_BTN: 'closeSettingsBtn',
+    RELEASE_NOTES_MODAL: 'releaseNotesModal',
+    OPEN_RELEASE_NOTES_BTN: 'openReleaseNotesBtn',
+    CLOSE_RELEASE_NOTES_BTN: 'closeReleaseNotesBtn'
 };
 
 export const Origins = {
