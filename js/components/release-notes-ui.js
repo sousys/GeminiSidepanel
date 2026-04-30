@@ -1,39 +1,12 @@
 import { DOMIds } from '../core/config.js';
 
-const RELEASE_NOTES = [
-    {
-        version: 'v0.4.0',
-        items: [
-            'Improved security: reduced unnecessary header modifications',
-            'Added data validation and error recovery for stored tabs & bookmarks',
-            'Flush pending state on panel close to prevent data loss',
-            'Use crypto.randomUUID() for tab IDs (collision-safe)',
-            'Smooth theme transitions (no flash on panel open)',
-            'Material 3 tonal error colors (WCAG AA contrast)',
-            'Keyboard navigation for tab bar (arrows, Enter, Delete)',
-            'ARIA labels on icon buttons for screen readers',
-            'Focus restoration after closing tabs (no focus theft)',
-            'Release Notes & version info in Settings'
-        ]
-    },
-    {
-        version: 'v0.3.0',
-        items: [
-            'Bookmarks with edit & broken-link detection',
-            'Persistent tabs across panel reopens',
-            'Light & dark theme with system preference',
-            'Content zoom (50%–120%)',
-            'Open current tab in browser',
-            'Buy-me-a-coffee link in toolbar'
-        ]
-    }
-];
-
 export class ReleaseNotesUI extends EventTarget {
     constructor() {
         super();
         this.modal = null;
         this.closeBtn = null;
+        this.contentEl = null;
+        this.releaseNotes = null;
     }
 
     render(container) {
@@ -43,6 +16,7 @@ export class ReleaseNotesUI extends EventTarget {
     init() {
         this.modal = document.getElementById(DOMIds.RELEASE_NOTES_MODAL);
         this.closeBtn = document.getElementById(DOMIds.CLOSE_RELEASE_NOTES_BTN);
+        this.contentEl = this.modal ? this.modal.querySelector('.release-notes') : null;
         this.bindEvents();
     }
 
@@ -59,11 +33,31 @@ export class ReleaseNotesUI extends EventTarget {
         }
     }
 
-    openModal() {
-        if (this.modal) {
-            this.modal.classList.add('open');
-            this.dispatchEvent(new CustomEvent('modal-open'));
+    async loadData() {
+        if (this.releaseNotes !== null) {
+            return this.releaseNotes;
         }
+        try {
+            const url = chrome.runtime.getURL('data/release-notes.json');
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            const data = await response.json();
+            this.releaseNotes = Array.isArray(data) ? data : [];
+        } catch (err) {
+            console.error('[ReleaseNotesUI] Failed to load release notes:', err);
+            this.releaseNotes = [];
+        }
+        return this.releaseNotes;
+    }
+
+    async openModal() {
+        if (!this.modal) return;
+        const data = await this.loadData();
+        this.renderEntries(data);
+        this.modal.classList.add('open');
+        this.dispatchEvent(new CustomEvent('modal-open'));
     }
 
     closeModal() {
@@ -76,16 +70,24 @@ export class ReleaseNotesUI extends EventTarget {
         return this.modal && this.modal.classList.contains('open');
     }
 
-    getTemplate() {
-        const entries = RELEASE_NOTES.map(entry => `
+    renderEntries(data) {
+        if (!this.contentEl) return;
+        if (!data || data.length === 0) {
+            this.contentEl.innerHTML = '<div class="empty-state">No release notes available.</div>';
+            return;
+        }
+        const html = data.map(entry => `
             <div class="release-entry">
-                <div class="release-version">${entry.version}</div>
+                <div class="release-version">${this.escapeHtml(entry.version)}</div>
                 <ul class="release-list">
-                    ${entry.items.map(item => `<li>${this.escapeHtml(item)}</li>`).join('')}
+                    ${(entry.items || []).map(item => `<li>${this.escapeHtml(item)}</li>`).join('')}
                 </ul>
             </div>
         `).join('');
+        this.contentEl.innerHTML = html;
+    }
 
+    getTemplate() {
         return `
             <div id="${DOMIds.RELEASE_NOTES_MODAL}" class="modal-overlay">
                 <div class="modal-content">
@@ -93,9 +95,7 @@ export class ReleaseNotesUI extends EventTarget {
                         <h2>Release Notes</h2>
                         <button id="${DOMIds.CLOSE_RELEASE_NOTES_BTN}" class="modal-close-btn" aria-label="Close release notes">&times;</button>
                     </div>
-                    <div class="release-notes">
-                        ${entries}
-                    </div>
+                    <div class="release-notes"></div>
                 </div>
             </div>
         `;
