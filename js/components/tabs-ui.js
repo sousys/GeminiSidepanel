@@ -98,29 +98,37 @@ export class TabBar extends EventTarget {
     }
 
     /**
-     * Render the provider picker: a single "+" trigger button that, on hover
-     * or click or keyboard activation, reveals a vertical menu of branded
-     * provider icons. Selecting one dispatches `'new-tab'`.
+     * Render the provider picker. Two layouts depending on enabled count:
      *
-     * The menu element lives inside the picker (so CSS :hover semantics work
-     * naturally) but uses position:fixed at runtime to escape `.tab-bar`'s
-     * `overflow-x: auto` clipping.
+     *  - Multiple providers: a single "+" trigger that, on hover or click or
+     *    keyboard activation, reveals a vertical menu of branded provider
+     *    icons. Selecting one dispatches `'new-tab'`.
+     *  - Single provider: a one-click button showing that provider's icon
+     *    directly. No menu, no hover handlers — clicking dispatches
+     *    `'new-tab'` immediately.
+     *
+     * The menu (multi-provider mode) lives inside the picker so CSS :hover
+     * semantics work naturally, but uses position:fixed at runtime to escape
+     * `.tab-bar`'s `overflow-x: auto` clipping.
      */
     renderProviderPicker() {
         if (!this.addTabGroup) return;
 
         // Preserve open state and focused-item index across rebuilds (e.g.
         // when providers are toggled in settings while the menu is open).
+        // Solo mode has no menu, so wasOpen is irrelevant there.
         const wasOpen = this.isPickerOpen;
         const previouslyFocusedId = (document.activeElement && document.activeElement.closest)
             ? (document.activeElement.closest('.provider-picker-item') || {}).getAttribute?.('data-provider-id')
             : null;
 
-        // Tear down any previous structure and listeners.
+        // Tear down any previous structure and listeners (null-safe; handles
+        // both menu and solo modes).
         this._teardownPicker();
 
         this.addTabGroup.innerHTML = '';
         this.addTabGroup.classList.add('provider-picker');
+        this.addTabGroup.classList.toggle('provider-picker--solo', this.enabledProviders.length === 1);
 
         // Hide the entire picker when no providers are enabled (defensive;
         // the settings dialog already guarantees at least one).
@@ -130,6 +138,29 @@ export class TabBar extends EventTarget {
         }
         this.addTabGroup.hidden = false;
 
+        // ----- Single-provider collapse -----------------------------------
+        if (this.enabledProviders.length === 1) {
+            const provider = this.enabledProviders[0];
+            const trigger = document.createElement('button');
+            trigger.className = 'provider-picker-trigger provider-picker-solo';
+            trigger.type = 'button';
+            trigger.setAttribute('aria-label', `New ${provider.name} chat`);
+            trigger.setAttribute('title', `New ${provider.name} chat`);
+            trigger.innerHTML = provider.icon;
+
+            trigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.dispatchEvent(new CustomEvent('new-tab', { detail: { providerId: provider.id } }));
+            });
+
+            this.addTabGroup.appendChild(trigger);
+            this.pickerTrigger = trigger;
+            this.pickerMenu = null;
+            // No hover/menu handlers in solo mode.
+            return;
+        }
+
+        // ----- Multi-provider menu ----------------------------------------
         // Trigger
         const trigger = document.createElement('button');
         trigger.className = 'provider-picker-trigger';
@@ -150,13 +181,31 @@ export class TabBar extends EventTarget {
         for (const provider of this.enabledProviders) {
             const item = document.createElement('button');
             item.className = 'provider-picker-item';
+            if (provider.limited) item.setAttribute('data-limited', 'true');
             item.type = 'button';
             item.setAttribute('role', 'menuitem');
             item.setAttribute('data-provider-id', provider.id);
             item.setAttribute('aria-label', `New ${provider.name} chat`);
             item.setAttribute('title', `New ${provider.name} chat`);
             item.tabIndex = -1;
-            item.innerHTML = provider.icon;
+            const iconSpan = document.createElement('span');
+            iconSpan.className = 'provider-picker-item-icon';
+            iconSpan.setAttribute('aria-hidden', 'true');
+            iconSpan.innerHTML = provider.icon;
+            item.appendChild(iconSpan);
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'provider-picker-item-name';
+            nameSpan.textContent = provider.name;
+            item.appendChild(nameSpan);
+
+            if (provider.limited && provider.limitations && provider.limitations.short) {
+                const hintSpan = document.createElement('span');
+                hintSpan.className = 'provider-picker-item-hint';
+                hintSpan.textContent = provider.limitations.short;
+                item.appendChild(hintSpan);
+            }
+
             item.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.dispatchEvent(new CustomEvent('new-tab', { detail: { providerId: provider.id } }));
@@ -425,10 +474,19 @@ export class TabBar extends EventTarget {
         const tabEl = document.createElement('div');
         tabEl.className = CSSClasses.TAB;
         tabEl.setAttribute('data-id', tab.id);
-        tabEl.setAttribute('title', tab.title);
         tabEl.setAttribute('role', 'tab');
         tabEl.setAttribute('tabindex', '-1');
         tabEl.setAttribute('draggable', 'true');
+
+        // Decorate tab with provider-limited accent stripe + enriched tooltip.
+        const provider = getProviderById(tab.provider);
+        if (provider && provider.limited) {
+            tabEl.setAttribute('data-limited', 'true');
+            if (provider.accentColor) {
+                tabEl.style.setProperty('--provider-accent', provider.accentColor);
+            }
+        }
+        tabEl.setAttribute('title', this._buildTabTooltip(tab, provider));
 
         tabEl.addEventListener('click', () =>
             this.dispatchEvent(new CustomEvent('tab-switch', { detail: { id: tab.id } }))
@@ -438,7 +496,6 @@ export class TabBar extends EventTarget {
         tabEl.addEventListener('dragend', () => this.onDragEnd());
 
         // Provider icon (purely decorative; tab pill already has aria-label)
-        const provider = getProviderById(tab.provider);
         const iconEl = document.createElement('span');
         iconEl.className = CSSClasses.TAB_PROVIDER_ICON;
         iconEl.setAttribute('aria-hidden', 'true');
@@ -481,11 +538,14 @@ export class TabBar extends EventTarget {
             el.setAttribute('aria-selected', 'false');
         }
 
+        const provider = getProviderById(tab.provider);
+
         const titleEl = el.querySelector(`.${CSSClasses.TAB_TITLE}`);
         if (titleEl && titleEl.textContent !== tab.title) {
             titleEl.textContent = tab.title;
-            el.setAttribute('title', tab.title);
         }
+        // Always refresh tooltip — title changes are common, and it's cheap.
+        el.setAttribute('title', this._buildTabTooltip(tab, provider));
 
         const closeBtn = el.querySelector(`.${CSSClasses.CLOSE_TAB}`);
         if (closeBtn) {
@@ -496,12 +556,24 @@ export class TabBar extends EventTarget {
         // (defensive — currently providers are immutable per tab).
         const iconEl = el.querySelector(`.${CSSClasses.TAB_PROVIDER_ICON}`);
         if (iconEl) {
-            const provider = getProviderById(tab.provider);
             const expected = (provider && provider.icon) || '';
             if (iconEl.innerHTML !== expected) {
                 iconEl.innerHTML = expected;
             }
         }
+    }
+
+    /**
+     * Compose a tab pill's `title` attribute. For limited-scope providers
+     * the short limitation label is appended so the user discovers WHY the
+     * tab looks/behaves differently on hover.
+     */
+    _buildTabTooltip(tab, provider) {
+        const base = tab.title || '';
+        if (provider && provider.limited && provider.limitations && provider.limitations.short) {
+            return base ? `${base} \u2014 ${provider.limitations.short}` : provider.limitations.short;
+        }
+        return base;
     }
 
     animateAndRemove(id, el) {

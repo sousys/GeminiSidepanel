@@ -1,5 +1,6 @@
 import { GeminiProvider } from '../providers/gemini/index.js';
 import { ChatGPTProvider } from '../providers/chatgpt/index.js';
+import { ClaudeProvider } from '../providers/claude/index.js';
 
 /**
  * Central registry of AI providers.
@@ -14,7 +15,20 @@ import { ChatGPTProvider } from '../providers/chatgpt/index.js';
  *     domains: string[],                 // for declarativeNetRequest header stripping
  *     routes: { newChat: string[] },     // pathnames considered "new chat" landing
  *     autoRedirectsDeletedChats: boolean,
- *     icon: string                       // inline SVG using currentColor
+ *     icon: string,                      // inline SVG using currentColor
+ *
+ *     // OPTIONAL — for limited-scope providers (e.g. Claude). Read by generic
+ *     // UI; safe to omit.
+ *     limited?: boolean,
+ *     accentColor?: string,              // brand color for the tab pill stripe
+ *     limitations?: {
+ *         short: string,                 // tooltip / picker hint
+ *         hint: string,                  // settings note + first-run strip
+ *         capabilities?: {               // optional per-capability opt-outs;
+ *             [key: string]: boolean     // `false` disables the matching toolbar
+ *         },                             // affordance via isCapabilityDisabled()
+ *         [reasonKey: string]: string    // optional `<key>Reason` strings used as
+ *     }                                  // the click-to-explain popover message
  *   }
  *
  * Provider-specific content-script (DOM scraping) logic intentionally lives
@@ -22,7 +36,8 @@ import { ChatGPTProvider } from '../providers/chatgpt/index.js';
  */
 const PROVIDERS = Object.freeze({
     [GeminiProvider.id]: GeminiProvider,
-    [ChatGPTProvider.id]: ChatGPTProvider
+    [ChatGPTProvider.id]: ChatGPTProvider,
+    [ClaudeProvider.id]: ClaudeProvider
 });
 
 const PROVIDER_LIST = Object.freeze(Object.values(PROVIDERS));
@@ -75,4 +90,20 @@ export function getAllProviderDomains() {
         for (const d of p.domains) seen.add(d);
     }
     return Array.from(seen);
+}
+
+/**
+ * Returns true when the provider has explicitly opted OUT of a capability
+ * via `limitations.capabilities[key] === false`. Anything else (including
+ * absent / undefined) is treated as "supported" — capability defaults are
+ * positive so old/new providers without the limited descriptor work as
+ * before.
+ *
+ * @param {object|null} provider Provider config (may be null/undefined).
+ * @param {string} key Capability key, e.g. 'bookmarks', 'openInBrowser'.
+ * @returns {boolean}
+ */
+export function isCapabilityDisabled(provider, key) {
+    if (!provider || !provider.limitations || !provider.limitations.capabilities) return false;
+    return provider.limitations.capabilities[key] === false;
 }

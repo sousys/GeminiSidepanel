@@ -11,8 +11,10 @@ import {
     getAllProviders,
     getAllProviderIds,
     getProviderById,
-    getProviderByOrigin
+    getProviderByOrigin,
+    isCapabilityDisabled
 } from './provider-registry.js';
+import { ProviderHints } from '../features/provider-hints.js';
 
 /**
  * Returns provider configs for currently-enabled providers, in registry order.
@@ -100,6 +102,10 @@ class App {
         await this.loadEnabledProviders();
         this.view.setEnabledProviders(filterEnabled(this.enabledMap));
 
+        // Pre-warm dismissed-hint cache so first render reads sync (avoids
+        // a hint-strip flash for already-dismissed providers).
+        await ProviderHints.load();
+
         this.bindEvents();
 
         // Initialize State & Bookmarks
@@ -124,6 +130,44 @@ class App {
         }
     }
 
+    /**
+     * Refresh the toolbar button states (bookmark + open-in-browser) for the
+     * currently active tab. Driven by the active tab's provider's capability
+     * descriptor: providers that opt out via
+     * `limitations.capabilities.{bookmarks|openInBrowser} === false` get a
+     * visually de-emphasized button with a click-to-explain popover.
+     */
+    refreshToolbarStates() {
+        const activeTab = this.state.getActiveTab();
+        if (!activeTab) {
+            this.view.setBookmarkButtonState({ enabled: false, reason: '' });
+            this.view.setOpenInBrowserState({ enabled: false, reason: '' });
+            return;
+        }
+        const provider = getProviderById(activeTab.provider);
+        const url = activeTab.url || '';
+        const isExtensionUrl = url.startsWith('chrome-extension://') || url === '' || url === 'about:blank';
+
+        // Bookmark button: disabled for extension/blank URLs OR providers that
+        // opt out of bookmarks capability.
+        const bookmarksDisabled = isExtensionUrl || isCapabilityDisabled(provider, 'bookmarks');
+        const bookmarksReason = isExtensionUrl
+            ? 'Bookmarks aren\u2019t available for this page.'
+            : (provider && provider.limitations && provider.limitations.bookmarksReason) ||
+              (provider && provider.limitations && provider.limitations.hint) || '';
+        this.view.setBookmarkButtonState({ enabled: !bookmarksDisabled, reason: bookmarksReason });
+
+        // Open-in-browser: disabled for extension/blank URLs OR providers
+        // that opt out (e.g. Claude — opening in a browser tab loses the
+        // session).
+        const openInBrowserDisabled = isExtensionUrl || isCapabilityDisabled(provider, 'openInBrowser');
+        const openInBrowserReason = isExtensionUrl
+            ? 'Open this page in a browser tab once it has loaded.'
+            : (provider && provider.limitations && provider.limitations.openInBrowserReason) ||
+              (provider && provider.limitations && provider.limitations.hint) || '';
+        this.view.setOpenInBrowserState({ enabled: !openInBrowserDisabled, reason: openInBrowserReason });
+    }
+
     bindEvents() {
         // Subscribe to store changes to trigger render.
         this.state.subscribe((tabs, activeTabId) => {
@@ -133,6 +177,7 @@ class App {
             if (activeTab) {
                 this.view.updateBookmarkButton(this.bookmarks.isBookmarked(activeTab.url));
             }
+            this.refreshToolbarStates();
         });
 
         this.bookmarks.addEventListener('bookmarks-changed', (e) => {
@@ -141,6 +186,7 @@ class App {
             if (activeTab) {
                 this.view.updateBookmarkButton(this.bookmarks.isBookmarked(activeTab.url));
             }
+            this.refreshToolbarStates();
         });
 
         // Tab events
@@ -168,8 +214,31 @@ class App {
         // Bookmark events
         this.view.addEventListener('bookmark-toggle', async () => {
             const activeTab = this.state.getActiveTab();
-            if (activeTab && activeTab.url && !activeTab.url.startsWith('chrome-extension://')) {
-                await this.bookmarks.toggle(activeTab.title, activeTab.url, activeTab.provider);
+            if (!activeTab || !activeTab.url) return;
+            if (activeTab.url.startsWith('chrome-extension://')) return;
+            // Defense-in-depth: ui-manager's click handler already routes
+            // disabled clicks to the explain-popover, but check here too in
+            // case the event arrives via a future code path.
+            const provider = getProviderById(activeTab.provider);
+            if (isCapabilityDisabled(provider, 'bookmarks')) return;
+            await this.bookmarks.toggle(activeTab.title, activeTab.url, activeTab.provider);
+        });
+
+        // Open-in-browser button (now wired via ui-manager).
+        this.view.addEventListener('open-in-browser', async () => {
+            const activeTab = this.state.getActiveTab();
+            if (!activeTab || !activeTab.url) return;
+            const provider = getProviderById(activeTab.provider);
+            // Defense-in-depth: same as bookmark guard above.
+            if (isCapabilityDisabled(provider, 'openInBrowser')) return;
+            try {
+                await chrome.tabs.create({ url: activeTab.url });
+                this.state.removeTab(activeTab.id);
+                if (this.state.getTabs().length === 0) {
+                    this.state.addTab();
+                }
+            } catch (error) {
+                console.error('Failed to open tab in browser:', error);
             }
         });
 
@@ -209,25 +278,6 @@ class App {
             }
             this.state.addTab(bookmark.title, bookmark.url, providerId);
         });
-
-        // Side toolbar wiring
-        const openBrowserBtn = document.getElementById(DOMIds.OPEN_BROWSER_BTN);
-        if (openBrowserBtn) {
-            openBrowserBtn.innerHTML = Icons.OPEN_NEW;
-            openBrowserBtn.addEventListener('click', async () => {
-                const activeTab = this.state.getActiveTab();
-                if (!activeTab || !activeTab.url) return;
-                try {
-                    await chrome.tabs.create({ url: activeTab.url });
-                    this.state.removeTab(activeTab.id);
-                    if (this.state.getTabs().length === 0) {
-                        this.state.addTab();
-                    }
-                } catch (error) {
-                    console.error('Failed to open tab in browser:', error);
-                }
-            });
-        }
 
         const settingsBtn = document.getElementById(DOMIds.SETTINGS_BTN);
         if (settingsBtn) {

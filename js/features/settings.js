@@ -1,6 +1,7 @@
 import { DOMIds, StorageKeys } from '../core/config.js';
 import { getAllProviders } from '../core/provider-registry.js';
 import { applyZoomToBody } from './zoom.js';
+import { ProviderHints } from './provider-hints.js';
 
 /**
  * Default state when no preference is persisted: every known provider enabled.
@@ -9,6 +10,22 @@ function buildDefaultEnabledMap() {
     const map = {};
     for (const p of getAllProviders()) map[p.id] = true;
     return map;
+}
+
+/**
+ * Minimal HTML attribute / text escaping for provider-supplied strings
+ * rendered via template literals. Provider config is in-repo today, but
+ * escaping here means future remote/dynamic provider metadata cannot
+ * inject markup.
+ */
+function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 export class SettingsManager extends EventTarget {
@@ -205,6 +222,14 @@ export class SettingsManager extends EventTarget {
                 if (e.target === this.modal) this.closeModal();
             });
         }
+
+        const resetHintsBtn = document.getElementById('resetProviderHintsBtn');
+        if (resetHintsBtn) {
+            resetHintsBtn.addEventListener('click', async () => {
+                await ProviderHints.resetAll();
+                this.showStatus('Provider hints reset');
+            });
+        }
     }
 
     collectEnabledMap() {
@@ -260,17 +285,28 @@ export class SettingsManager extends EventTarget {
     }
 
     getProvidersTemplate() {
-        const items = getAllProviders().map(p => `
-            <label>
-                <input type="checkbox" id="provider-${p.id}" data-provider-id="${p.id}">
-                ${p.name}
-            </label>
-        `).join('');
+        const items = getAllProviders().map(p => {
+            const hint = p.limitations && p.limitations.hint
+                ? `<small class="provider-limit-note">${escapeHtml(p.limitations.hint)}</small>`
+                : '';
+            return `
+                <div class="provider-row" data-provider-id="${p.id}">
+                    <label>
+                        <input type="checkbox" id="provider-${p.id}" data-provider-id="${p.id}">
+                        <span class="provider-row-name">${escapeHtml(p.name)}</span>
+                    </label>
+                    ${hint}
+                </div>
+            `;
+        }).join('');
         return `
             <h2>Providers</h2>
             <div id="${DOMIds.PROVIDERS_GROUP}" class="settings-group providers-group">
                 <p class="first-run-notice">Choose which AI providers you want to use. You can change this later.</p>
                 ${items}
+                <button type="button" id="resetProviderHintsBtn" class="settings-link-btn settings-link-btn--small">
+                    <span>Reset dismissed provider hints</span>
+                </button>
             </div>
         `;
     }

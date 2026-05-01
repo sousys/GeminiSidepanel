@@ -1,5 +1,18 @@
 [
     {
+        "version": "v0.7.0",
+        "items": [
+            "Added Claude (claude.ai) as a third provider \u2014 a lightweight integration: Claude removes its sidebar and chat history when embedded in the side panel. Bookmarks and 'Open in browser' work normally; use a regular browser tab on claude.ai for the full sidebar / history experience.",
+            "Settings now shows a one-line note beneath each limited-scope provider explaining its constraints",
+            "Limited-scope tabs get a brand-colored accent stripe on the tab pill so you can spot them at a glance",
+            "First time you open a limited-scope provider tab, a dismissible hint strip appears above the iframe explaining the limitations; dismiss with 'Got it' (per-provider, one-time \u2014 reset from Settings)",
+            "Single-provider mode: when only one provider is enabled in Settings, the '+' new-chat button collapses to a one-click shortcut showing that provider's icon",
+            "Note: Chrome will prompt to re-grant permissions on update because claude.ai was added to host permissions",
+            "Note: 'Open in browser' uses your main browser profile, which may be signed in as a different account than the side-panel session",
+            "Note: Claude tab titles can lag because there's no sidebar to scrape \u2014 we rely on Claude's <title> updates"
+        ]
+    },
+    {
         "version": "v0.6.3",
         "items": [
             "Fixed: ChatGPT tab titles now reliably reflect navigation inside the app (new chat, switching conversations) without needing to switch tabs in the side panel"

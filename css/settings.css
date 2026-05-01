@@ -266,3 +266,45 @@ input[type="checkbox"]:checked::after {
 .providers-group[data-first-run='true'] .first-run-notice {
   display: block;
 }
+
+/* Per-provider row: groups checkbox label + (optional) limit note. */
+.provider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--spacing-sm) 0;
+  border-bottom: 1px solid transparent;
+}
+.provider-row:not(:last-of-type) {
+  border-bottom-color: var(--border-color);
+}
+
+/* The label inside .provider-row should NOT have the global hover background
+ * (the row itself is the visual unit now). Keep cursor pointer for the
+ * checkbox area though. */
+#settingsContent .provider-row label {
+  background: transparent;
+  padding: 0 var(--spacing-sm);
+}
+#settingsContent .provider-row label:hover {
+  background: var(--hover-color);
+}
+
+/* One-line muted hint shown beneath limited-scope provider rows. */
+.provider-limit-note {
+  display: block;
+  margin-left: calc(14px + var(--spacing-md) + var(--spacing-sm));
+  font-size: 0.75rem;
+  opacity: 0.75;
+  line-height: 1.35;
+  color: var(--text-secondary);
+}
+
+/* Smaller variant of the link button, used for the "Reset hints" affordance. */
+.settings-link-btn--small {
+  font-size: 0.75rem;
+  padding: 6px 0;
+  margin-top: 4px;
+  border-top: none;
+  color: var(--text-secondary);
+}

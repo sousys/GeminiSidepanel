@@ -53,6 +53,18 @@
   box-shadow: inset 0 0.125rem 0 0 var(--accent-color); 
 }
 
+/* Limited-scope provider tabs get a left-edge accent stripe in the
+ * provider's brand color (set by JS via the --provider-accent custom
+ * property). Stacks with the active-tab top stripe via box-shadow chaining. */
+.tab[data-limited="true"] {
+  box-shadow: inset 2px 0 0 0 var(--provider-accent, var(--accent-color));
+}
+.tab[data-limited="true"].active {
+  box-shadow:
+    inset 0 0.125rem 0 0 var(--accent-color),
+    inset 2px 0 0 0 var(--provider-accent, var(--accent-color));
+}
+
 /* Separator line between inactive tabs */
 .tab:not(.active):not(:hover)::after {
   content: "";
@@ -164,6 +176,21 @@
     color: var(--accent-color);
 }
 
+/* Disabled state for toolbar buttons. We use [aria-disabled] (NOT the
+ * native :disabled) so the button still accepts click + hover events for
+ * the click-to-explain popover and tooltip. */
+.toggle-bookmark-btn.is-disabled,
+.open-browser-btn.is-disabled,
+.toolbar-btn.is-disabled {
+    opacity: 0.45;
+    cursor: help;
+}
+.toggle-bookmark-btn.is-disabled:hover,
+.open-browser-btn.is-disabled:hover {
+    background: transparent;
+    color: var(--text-secondary);
+}
+
 #content-area {
   flex-grow: 1;
   position: relative;
@@ -171,16 +198,84 @@
   overflow: hidden;
 }
 
-iframe {
-  width: 100%;
-  height: 100%;
-  border: 0;
+/* Each tab's iframe lives inside a wrapper so we can render an above-the-
+ * iframe hint strip without injecting markup into the iframe itself
+ * (which would be CSP-blocked). Inactive wrappers are simply hidden. */
+.tab-content-wrapper {
+  position: absolute;
+  inset: 0;
   display: none;
-  background: var(--bg-color); 
+  flex-direction: column;
+}
+.tab-content-wrapper.active {
+  display: flex;
 }
 
-iframe.active {
-  display: block;
+iframe {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  border: 0;
+  background: var(--bg-color);
+}
+
+/* First-run / limited-provider hint strip. Slides up when dismissed
+ * (max-height transition is animatable; height:auto is not). */
+.provider-hint-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  color: var(--text-primary);
+  background: var(--tab-active-bg);
+  border-bottom: 1px solid var(--border-color);
+  flex: 0 0 auto;
+  overflow: hidden;
+  max-height: 80px;
+  transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
+}
+.provider-hint-strip--leaving {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-bottom-width: 0;
+}
+.provider-hint-text {
+  flex: 1 1 auto;
+  line-height: 1.3;
+}
+.provider-hint-dismiss {
+  flex: 0 0 auto;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.provider-hint-dismiss:hover,
+.provider-hint-dismiss:focus-visible {
+  background: var(--tab-hover-bg);
+  outline: none;
+}
+
+/* Inline popover used by the click-to-explain on disabled toolbar buttons. */
+.inline-popover {
+  position: fixed;
+  z-index: 1300;
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--text-primary);
+  background: var(--tab-active-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  pointer-events: auto;
 }
 
 .credits {
@@ -343,6 +438,53 @@ iframe.active {
   width: 14px;
   height: 14px;
   pointer-events: none;
+}
+
+/* Solo-provider mode: when only one provider is enabled, the trigger IS the
+ * provider icon (no '+', no menu). Match the menu-icon footprint so the
+ * tab bar layout doesn't shift when toggling enabled providers. */
+.provider-picker-trigger.provider-picker-solo {
+  font-size: 0; /* hide any stray text fallback */
+  padding: 0;
+}
+.provider-picker-trigger.provider-picker-solo svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Multi-provider menu items become wider rows (icon + name + optional
+ * limit hint). Single-icon-only style is preserved when no name span exists,
+ * but in practice we always render a name span now. */
+.provider-picker-item-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+}
+.provider-picker-item-name {
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+  flex-shrink: 0;
+}
+.provider-picker-item-hint {
+  font-size: 0.6875rem;
+  opacity: 0.7;
+  margin-left: 0.5rem;
+  flex: 1 1 auto;
+  text-align: right;
+  font-style: italic;
+}
+/* Override the tight 1.75rem fixed width for menu items now that they
+ * render label rows rather than icon-only buttons. */
+.provider-picker-menu .provider-picker-item {
+  width: auto;
+  min-width: 9rem;
+  padding: 0.25rem 0.5rem;
+  justify-content: flex-start;
+  height: auto;
+  min-height: 1.75rem;
 }
 
 /* Small provider icon shown at the start of each tab pill. */
