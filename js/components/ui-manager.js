@@ -12,10 +12,17 @@ export class ViewRenderer extends EventTarget {
         this.iframeHandler = new IframeHandler();
         this.bookmarksUI = new BookmarksUI();
         this.releaseNotesUI = new ReleaseNotesUI();
-        
+
         // UI Elements
         this.bookmarkBtn = null;
         this.toggleBookmarkBtn = null;
+        this.openBrowserBtn = null;
+
+        // Single shared inline-popover element + auto-dismiss bookkeeping.
+        this._popoverEl = null;
+        this._popoverAnchor = null;
+        this._popoverDismiss = null;
+        this._popoverTimeoutId = null;
     }
 
     init() {
@@ -65,7 +72,20 @@ export class ViewRenderer extends EventTarget {
         // Initialize Bookmark UI Buttons
         this.bookmarkBtn = document.getElementById(DOMIds.BOOKMARK_BTN);
         this.toggleBookmarkBtn = document.getElementById(DOMIds.TOGGLE_BOOKMARK_BTN);
-        
+        this.openBrowserBtn = document.getElementById(DOMIds.OPEN_BROWSER_BTN);
+
+        if (this.openBrowserBtn) {
+            this.openBrowserBtn.innerHTML = Icons.OPEN_NEW;
+            this.openBrowserBtn.addEventListener('click', () => {
+                if (this.openBrowserBtn.getAttribute('aria-disabled') === 'true') {
+                    const reason = this.openBrowserBtn.dataset.disabledReason || '';
+                    this.showInlinePopover(this.openBrowserBtn, reason);
+                    return;
+                }
+                this.dispatchEvent(new CustomEvent('open-in-browser'));
+            });
+        }
+
         if (this.bookmarkBtn) {
             this.bookmarkBtn.innerHTML = Icons.BOOKMARK_LIST;
             this.bookmarkBtn.addEventListener('click', () => {
@@ -85,6 +105,14 @@ export class ViewRenderer extends EventTarget {
             // Initial Icon (Outline)
             this.toggleBookmarkBtn.innerHTML = Icons.BOOKMARK_OUTLINE;
             this.toggleBookmarkBtn.addEventListener('click', () => {
+                // When aria-disabled, surface the explanation popover instead
+                // of toggling. Using `aria-disabled` (NOT the `disabled`
+                // attribute) preserves click + tooltip behavior.
+                if (this.toggleBookmarkBtn.getAttribute('aria-disabled') === 'true') {
+                    const reason = this.toggleBookmarkBtn.dataset.disabledReason || '';
+                    this.showInlinePopover(this.toggleBookmarkBtn, reason);
+                    return;
+                }
                 this.dispatchEvent(new CustomEvent('bookmark-toggle'));
             });
         }
@@ -126,6 +154,116 @@ export class ViewRenderer extends EventTarget {
             this.toggleBookmarkBtn.innerHTML = Icons.BOOKMARK_OUTLINE;
             this.toggleBookmarkBtn.classList.remove(CSSClasses.BOOKMARKED);
         }
+    }
+
+    /**
+     * Set the toggle-bookmark button's enabled/disabled state. We use
+     * `aria-disabled` (NOT the native `disabled` attribute) so the button
+     * remains clickable for the click-to-explain popover and the tooltip
+     * still surfaces on hover.
+     *
+     * @param {{enabled:boolean, reason?:string}} state
+     */
+    setBookmarkButtonState({ enabled, reason }) {
+        this._applyDisabledState(this.toggleBookmarkBtn, enabled, reason, 'Toggle Bookmark');
+    }
+
+    /**
+     * Set the open-in-browser button's enabled/disabled state.
+     */
+    setOpenInBrowserState({ enabled, reason }) {
+        this._applyDisabledState(this.openBrowserBtn, enabled, reason, 'Open in Browser');
+    }
+
+    _applyDisabledState(btn, enabled, reason, defaultTitle) {
+        if (!btn) return;
+        const wasDisabled = btn.getAttribute('aria-disabled') === 'true';
+        if (enabled) {
+            btn.removeAttribute('aria-disabled');
+            btn.classList.remove('is-disabled');
+            delete btn.dataset.disabledReason;
+            btn.setAttribute('title', defaultTitle);
+            // If a popover is currently anchored to THIS button, dismiss it
+            // since its message no longer applies.
+            if (wasDisabled && this._popoverAnchor === btn) {
+                this._dismissPopover();
+            }
+        } else {
+            btn.setAttribute('aria-disabled', 'true');
+            btn.classList.add('is-disabled');
+            btn.dataset.disabledReason = reason || '';
+            btn.setAttribute('title', reason || defaultTitle);
+        }
+    }
+
+    /**
+     * Show a transient inline popover anchored below the given element.
+     * Single-instance: opening a new popover dismisses any previous one.
+     * Auto-dismisses on next document click or after 6 seconds.
+     */
+    showInlinePopover(anchor, message) {
+        this._dismissPopover();
+        if (!anchor || !message) return;
+
+        const pop = document.createElement('div');
+        pop.className = 'inline-popover';
+        pop.setAttribute('role', 'status');
+        pop.textContent = message;
+        document.body.appendChild(pop);
+        this._popoverEl = pop;
+        this._popoverAnchor = anchor;
+
+        // Position: prefer below anchor, clamp to viewport. Width capped at
+        // min(280px, viewportWidth - 16px) so it never overflows the
+        // narrow side panel.
+        const anchorRect = anchor.getBoundingClientRect();
+        const viewportWidth = document.documentElement.clientWidth;
+        const maxWidth = Math.max(120, Math.min(280, viewportWidth - 16));
+        pop.style.maxWidth = `${maxWidth}px`;
+
+        // Force layout to read the rendered size.
+        const popRect = pop.getBoundingClientRect();
+        let top = anchorRect.bottom + 6;
+        // If it would overflow vertically, place above instead.
+        if (top + popRect.height > document.documentElement.clientHeight - 4) {
+            top = Math.max(4, anchorRect.top - popRect.height - 6);
+        }
+        let left = anchorRect.left + (anchorRect.width / 2) - (popRect.width / 2);
+        left = Math.max(8, Math.min(left, viewportWidth - popRect.width - 8));
+
+        pop.style.top = `${Math.round(top)}px`;
+        pop.style.left = `${Math.round(left)}px`;
+
+        // Auto-dismiss handlers.
+        const onDocClick = (e) => {
+            // Don't dismiss the popover that was JUST opened by the same click.
+            if (pop.contains(e.target)) return;
+            this._dismissPopover();
+        };
+        // Defer attach so the originating click doesn't immediately dismiss.
+        setTimeout(() => {
+            document.addEventListener('mousedown', onDocClick);
+        }, 0);
+        this._popoverDismiss = () => {
+            document.removeEventListener('mousedown', onDocClick);
+        };
+        this._popoverTimeoutId = setTimeout(() => this._dismissPopover(), 6000);
+    }
+
+    _dismissPopover() {
+        if (this._popoverTimeoutId) {
+            clearTimeout(this._popoverTimeoutId);
+            this._popoverTimeoutId = null;
+        }
+        if (this._popoverDismiss) {
+            try { this._popoverDismiss(); } catch (_) { /* noop */ }
+            this._popoverDismiss = null;
+        }
+        if (this._popoverEl) {
+            this._popoverEl.remove();
+            this._popoverEl = null;
+        }
+        this._popoverAnchor = null;
     }
 
     closeBookmarksModal() {

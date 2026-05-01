@@ -1,14 +1,14 @@
 # AI MultiTab Sidepanel
 
-**AI MultiTab Sidepanel** is a Chrome Extension that integrates multiple AI providers (Gemini and ChatGPT) directly into your browser's side panel. It provides a persistent, multi-tabbed experience, enabling you to maintain multiple conversation contexts across providers simultaneously without leaving your current webpage.
+**AI MultiTab Sidepanel** is a Chrome Extension that integrates multiple AI providers (Gemini, ChatGPT, and Claude) directly into your browser's side panel. It provides a persistent, multi-tabbed experience, enabling you to maintain multiple conversation contexts across providers simultaneously without leaving your current webpage.
 
 ## Features
 
--   **Multi-Provider Support**: Use Google Gemini and OpenAI ChatGPT side-by-side. Enable/disable providers from Settings.
+-   **Multi-Provider Support**: Use Google Gemini, OpenAI ChatGPT, and Anthropic Claude side-by-side. Enable/disable providers from Settings. Claude is a *lightweight integration* — it has no sidebar or chat history when embedded; bookmarks and "Open in browser" still work normally.
 -   **Side Panel Integration**: Access your AI providers instantly alongside your browsing.
 -   **Multi-Tab Support**: Create and manage multiple chat tabs across providers, with drag-and-drop reordering.
--   **Provider Picker**: A single **+** button reveals a hover/click/keyboard-accessible vertical menu of provider icons for starting a new chat with any enabled provider.
--   **Branded Provider Icons**: Each tab and bookmark displays the real provider logo (Gemini sparkle, OpenAI monoblossom) so you always know which AI you're looking at.
+-   **Provider Picker**: A single **+** button reveals a hover/click/keyboard-accessible vertical menu of provider icons for starting a new chat with any enabled provider. When only one provider is enabled, the picker collapses to a one-click shortcut showing that provider's icon.
+-   **Branded Provider Icons**: Each tab and bookmark displays the real provider logo (Gemini sparkle, OpenAI monoblossom, Claude wordmark) so you always know which AI you're looking at. Limited-scope providers also get a brand-colored accent stripe on the tab pill.
 -   **Bookmarks & Saved Chats**: Save specific chats as bookmarks for quick access. Bookmarks remember their provider and display the matching provider icon. Edit titles/URLs, detect broken links automatically, and organize your favorite conversations.
 -   **Live Zoom**: Adjust content size from 50% to 120% via the Settings drawer — the panel resizes in real time as you drag the slider.
 -   **Release Notes**: View version history and changelog directly from within Settings.
@@ -89,6 +89,8 @@ This extension uses a modern, modular **Component-Based Architecture** with **JS
     -   **`gemini/index.js`**: Gemini provider configuration (origin, routes, icon, etc.).
     -   **`chatgpt/content-script.js`**: ChatGPT-specific SPA navigation tracker. Observes the `#history` element with a `MutationObserver` and also watches `<head><title>` for rename events. Works in concert with the parent's 2-second `CHECK_STATE` poll to guarantee title accuracy.
     -   **`chatgpt/index.js`**: ChatGPT provider configuration.
+    -   **`claude/content-script.js`**: Claude-specific tracker. Claude renders a stripped composer-only layout when embedded in an iframe (no sidebar, no chat history), so titles are extracted from `<title>` only.
+    -   **`claude/index.js`**: Claude provider configuration. Includes the optional `limited` / `limitations` capability descriptor consumed generically by the UI to render the tab accent stripe, settings chips, first-run hint strip, and disabled toolbar buttons.
 
 5.  **Platform (`js/platform/`)**:
     -   **`service-worker.js`**: Background service worker. Uses `declarativeNetRequest` to strip `content-security-policy` and `x-frame-options` headers, allowing AI providers to be embedded in the side panel iframe.
@@ -155,4 +157,4 @@ This extension uses a modern, modular **Component-Based Architecture** with **JS
 
 ## Version
 
-Current version: **0.6.3** — see `data/release-notes.json` for full changelog.
+Current version: **0.7.0** — see `data/release-notes.json` for full changelog.
