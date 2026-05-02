@@ -5,14 +5,16 @@
 
 ## Installation
 
-Since this extension is not yet in the Chrome Web Store, you can install it in Developer Mode:
+This extension works in both **Google Chrome** and **Microsoft Edge**. Since it is not yet in the Chrome Web Store (or Edge Add-ons store), you can install it in Developer Mode:
 
 1.  **Clone or Download** this repository to your local machine.
-2.  Open Google Chrome and navigate to `chrome://extensions/`.
+2.  Open **Chrome** (`chrome://extensions/`) or **Edge** (`edge://extensions/`) — or select **Manage extensions** from the browser menu (⋮ / … → Extensions → Manage extensions).
 3.  Enable **Developer mode** by toggling the switch in the top-right corner.
 4.  Click the **Load unpacked** button.
 5.  Select the directory where you downloaded/cloned this project (ensure it contains the `manifest.json` file).
 6.  The extension is now installed! Click the puzzle piece icon in your toolbar and pin **AI MultiTab Sidepanel** for easy access.
+
+> **Tip:** For some providers (Gemini, ChatGPT, Claude) you may need to **log in once in a regular browser tab** before the side panel can show your account and conversations. Once logged in, the side panel will pick up your session automatically.
 
 ## Features
 
