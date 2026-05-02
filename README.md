@@ -2,6 +2,18 @@
 
 **AI MultiTab Sidepanel** is a Chrome Extension that integrates multiple AI providers (Gemini, ChatGPT, and Claude) directly into your browser's side panel. It provides a persistent, multi-tabbed experience, enabling you to maintain multiple conversation contexts across providers simultaneously without leaving your current webpage.
 
+
+## Installation
+
+Since this extension is not yet in the Chrome Web Store, you can install it in Developer Mode:
+
+1.  **Clone or Download** this repository to your local machine.
+2.  Open Google Chrome and navigate to `chrome://extensions/`.
+3.  Enable **Developer mode** by toggling the switch in the top-right corner.
+4.  Click the **Load unpacked** button.
+5.  Select the directory where you downloaded/cloned this project (ensure it contains the `manifest.json` file).
+6.  The extension is now installed! Click the puzzle piece icon in your toolbar and pin **AI MultiTab Sidepanel** for easy access.
+
 ## Features
 
 -   **Multi-Provider Support**: Use Google Gemini, OpenAI ChatGPT, and Anthropic Claude side-by-side. Enable/disable providers from Settings. Claude is a *lightweight integration* — it has no sidebar or chat history when embedded; bookmarks and "Open in browser" still work normally.
@@ -20,17 +32,6 @@
 -   **Accessibility**: ARIA labels on all icon buttons and the provider picker menu, screen-reader-friendly controls, focus management.
 -   **Keyboard Shortcut**: Fast panel access via `Alt+G` (default).
 -   **Seamless Navigation**: Open any chat in a full browser tab with a single click.
-
-## Installation
-
-Since this extension is not yet in the Chrome Web Store, you can install it in Developer Mode:
-
-1.  **Clone or Download** this repository to your local machine.
-2.  Open Google Chrome and navigate to `chrome://extensions/`.
-3.  Enable **Developer mode** by toggling the switch in the top-right corner.
-4.  Click the **Load unpacked** button.
-5.  Select the directory where you downloaded/cloned this project (ensure it contains the `manifest.json` file).
-6.  The extension is now installed! Click the puzzle piece icon in your toolbar and pin **AI MultiTab Sidepanel** for easy access.
 
 ## Usage
 
